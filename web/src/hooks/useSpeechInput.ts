@@ -10,7 +10,9 @@ export function useSpeechInput(onTranscript: (text: string, isFinal: boolean) =>
   const [listening, setListening] = useState(false)
   const recRef = useRef<any>(null)
   const cbRef = useRef(onTranscript)
-  cbRef.current = onTranscript
+  useEffect(() => {
+    cbRef.current = onTranscript
+  })
 
   useEffect(() => {
     return () => recRef.current?.abort?.()

@@ -26,7 +26,9 @@ export default function AppShell() {
   })
   const [dragging, setDragging] = useState(false)
   const widthRef = useRef(chatWidth)
-  widthRef.current = chatWidth
+  useEffect(() => {
+    widthRef.current = chatWidth
+  }, [chatWidth])
 
   // a dashboard "Ask Penny" tap should reveal the chat on small screens
   useEffect(() => onAskPenny(() => setMobileView('chat')), [])

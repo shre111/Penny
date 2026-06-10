@@ -115,7 +115,7 @@ class ScriptedModel(BaseChatModel):
                 "One moment — handing this to the Bookkeeper…",
                 tool_calls=[_tc("ask_bookkeeper", {"request": human})],
             )
-        if any(k in h for k in ("chart", "aging", "late", "month", "cash", "how did", "how are we", "doing")):
+        if any(k in h for k in ("chart", "aging", "late", "month", "cash", "how did", "how are we", "doing", "forecast", "get paid", "coming in", "expect")):
             return AIMessage(
                 "Let me get the Analyst on this…",
                 tool_calls=[_tc("ask_analyst", {"request": human})],
@@ -198,6 +198,8 @@ class ScriptedModel(BaseChatModel):
                 )
             return AIMessage("Numbers delivered.")
 
+        if "forecast" in h or "get paid" in h or "coming in" in h or "expect" in h:
+            return AIMessage("Charting…", tool_calls=[_tc("make_chart", {"kind": "forecast"})])
         if "aging" in h or "late" in h or "owe" in h:
             return AIMessage("Charting…", tool_calls=[_tc("make_chart", {"kind": "aging"})])
         if "chart" in h or "month" in h or "cash" in h or "billed" in h:

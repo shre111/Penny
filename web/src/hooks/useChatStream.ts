@@ -46,7 +46,9 @@ export function useChatStream(sessionId: string | null) {
   const [busy, setBusy] = useState(false)
   const [loadingHistory, setLoadingHistory] = useState(false)
   const sessionRef = useRef(sessionId)
-  sessionRef.current = sessionId
+  useEffect(() => {
+    sessionRef.current = sessionId
+  }, [sessionId])
 
   useEffect(() => {
     setMessages([])

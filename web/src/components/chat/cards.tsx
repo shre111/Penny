@@ -29,6 +29,8 @@ export function ChartCard({ data }: { data: { kind: string; title: string; data:
               <Bar dataKey="billed" name="Billed" fill="#bcdfc9" radius={[5, 5, 0, 0]} maxBarSize={22} />
               <Bar dataKey="collected" name="Collected" fill="#2a7350" radius={[5, 5, 0, 0]} maxBarSize={22} />
             </>
+          ) : data.kind === 'forecast' ? (
+            <Bar dataKey="value" name="Expected" fill="#5ba980" radius={[5, 5, 0, 0]} maxBarSize={30} />
           ) : (
             <Bar dataKey="value" radius={[5, 5, 0, 0]} maxBarSize={48}>
               {data.data.map((_: any, i: number) => (

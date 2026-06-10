@@ -12,7 +12,9 @@ export function useLiveData<T>(path: string, entities: string[]) {
   const [data, setData] = useState<T | null>(null)
   const [highlights, setHighlights] = useState<Set<string>>(new Set())
   const entitiesRef = useRef(entities)
-  entitiesRef.current = entities
+  useEffect(() => {
+    entitiesRef.current = entities
+  })
 
   const refetch = useCallback(() => {
     api<T>(path)

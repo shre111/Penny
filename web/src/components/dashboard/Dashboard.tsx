@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Sparkles } from 'lucide-react'
 import { useLiveData } from '../../hooks/useLiveData'
-import type { Client, EmailRecord, Invoice, Summary } from '../../lib/types'
+import type { Client, EmailRecord, Forecast, Invoice, Summary } from '../../lib/types'
 import { api } from '../../lib/api'
 import { Spinner } from '../ui'
-import { KpiCards, AgingChart, CashflowChart } from './widgets'
+import { KpiCards, AgingChart, CashflowChart, ForecastCard } from './widgets'
 import { InvoiceTable, ClientsTable, Outbox } from './tables'
 import { ActivityFeed } from './ActivityFeed'
 
@@ -18,6 +18,7 @@ export function Dashboard() {
   const clients = useLiveData<{ clients: Client[] }>('/api/clients', ['client'])
   const emails = useLiveData<{ emails: EmailRecord[] }>('/api/emails', ['email'])
   const activities = useLiveData<{ activities: any[] }>('/api/activities', ['invoice', 'client', 'email'])
+  const forecast = useLiveData<{ forecast: Forecast }>('/api/metrics/forecast', ['invoice'])
   const [seeding, setSeeding] = useState(false)
 
   const queuedCount = emails.data?.emails.filter((e) => e.status === 'queued').length || undefined
@@ -84,6 +85,7 @@ export function Dashboard() {
           <div className="grid lg:grid-cols-2 gap-4">
             {charts.data && <AgingChart data={charts.data.aging} />}
             {charts.data && <CashflowChart data={charts.data.cashflow} />}
+            {forecast.data && <ForecastCard forecast={forecast.data.forecast} />}
           </div>
           <InvoiceTable invoices={invoices.data.invoices} highlights={invoices.highlights} />
         </div>

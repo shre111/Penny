@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ChevronDown, Mic, Paperclip, Plus, SendHorizonal, Trash2 } from 'lucide-react'
+import { ChevronDown, Mic, Paperclip, Plus, SendHorizonal, Square, Trash2, Volume2 } from 'lucide-react'
 import { api } from '../../lib/api'
 import { useAuth } from '../../lib/auth'
 import type { Briefing, ChatSession, EmailRecord } from '../../lib/types'
@@ -7,10 +7,30 @@ import { fmtMoney } from '../../lib/format'
 import { useChatStream } from '../../hooks/useChatStream'
 import { useLiveData } from '../../hooks/useLiveData'
 import { useSpeechInput } from '../../hooks/useSpeechInput'
+import { useSpeak } from '../../hooks/useSpeak'
 import { onAskPenny } from '../../lib/askPenny'
 import { CoinMark, Spinner } from '../ui'
 import { MessageView } from './MessageView'
 import { QueuedDraftsCard } from './QueuedDraftsCard'
+
+/** The same words the briefing shows, phrased for the ear. */
+function briefingSpeech(b: Briefing, name?: string): string {
+  const first = (name || '').split(' ')[0]
+  const hello = `${greeting()}${first ? `, ${first}` : ''}.`
+  if (b.overdueCount > 0) {
+    const parts = [
+      `Heads up: ${b.overdueCount === 1 ? 'one invoice is' : `${b.overdueCount} invoices are`} overdue — ${fmtMoney(b.overdueTotal)} you're owed.`,
+    ]
+    if (b.newlyOverdueCount > 0) parts.push(`${b.newlyOverdueCount} of them just went late this week.`)
+    if (b.paymentsReceivedTotal > 0) parts.push(`On the bright side, ${fmtMoney(b.paymentsReceivedTotal)} came in over the last 7 days.`)
+    parts.push('Want me to chase the late ones?')
+    return `${hello} ${parts.join(' ')}`
+  }
+  if (b.dueSoonCount > 0) {
+    return `${hello} All caught up — nothing overdue. ${b.dueSoonCount === 1 ? 'One invoice' : `${b.dueSoonCount} invoices`}, worth ${fmtMoney(b.dueSoonTotal)}, ${b.dueSoonCount === 1 ? 'comes' : 'come'} due this week. Anything I can take off your plate?`
+  }
+  return `${hello} Your books are quiet — nothing overdue, nothing due this week. Enjoy it!`
+}
 
 const STARTER_CHIPS = [
   'Who owes me money?',
@@ -38,6 +58,9 @@ export function ChatPanel() {
   const [draftsSnapshot, setDraftsSnapshot] = useState<EmailRecord[]>([])
   useEffect(() => {
     if ((queued.data?.emails.length ?? 0) > 0 && draftsSnapshot.length === 0) {
+      // Freezing the first non-empty fetch is intentional: the card must keep
+      // showing per-draft outcomes after each one is handled. Guarded, fires once.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDraftsSnapshot(queued.data!.emails)
     }
   }, [queued.data, draftsSnapshot.length])
@@ -53,6 +76,7 @@ export function ChatPanel() {
   )
 
   const speech = useSpeechInput((text) => setInput(text))
+  const speak = useSpeak()
 
   // load (or start) a conversation
   useEffect(() => {
@@ -189,7 +213,17 @@ export function ChatPanel() {
                   <p>I keep your invoices, clients and follow-ups in order — just talk to me like you would to a helpful bookkeeper. You can also drop a photo of an invoice here and I'll log it.</p>
                 )}
               </div>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1.5 items-center">
+                {speak.supported && briefing && (
+                  <button
+                    className={`chip ${speak.speaking ? 'border-copper-500 text-copper-600 bg-copper-100/50' : ''}`}
+                    onClick={() => speak.toggle(briefingSpeech(briefing, user?.name))}
+                    aria-label={speak.speaking ? 'Stop reading' : 'Have Penny read this aloud'}
+                  >
+                    {speak.speaking ? <Square className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+                    {speak.speaking ? 'Stop' : 'Listen'}
+                  </button>
+                )}
                 {(briefing && briefing.overdueCount > 0 ? ['Chase the overdue invoices', ...STARTER_CHIPS.filter((c) => c !== 'Chase the overdue invoices')] : STARTER_CHIPS).map((chip) => (
                   <button key={chip} className="chip" onClick={() => submit(chip)}>
                     {chip}

@@ -21,6 +21,7 @@ Goal: go past the basics before the M32 deadline (~June 12, 2026). Ranked by imp
 
 - [x] **7. PDF invoice generation** — branded PDF per invoice (`GET /api/invoices/:id/pdf`), row download button + `get_invoice_pdf_link` agent tool.
 - [x] **8. Public landing page** — `/` is a product page when signed out: live app screenshot, feature grid, "Try the live demo" button that signs into the demo account.
+- [x] **Bonus round: payment personalities + cash-flow forecast + voice-out** — client payment habits learned from history (badges + agent-aware), "Money coming in" forecast card + make_chart(forecast), Penny reads the briefing aloud (speechSynthesis)
 - [ ] **9. CSV import** (~1–2h) — bulk-load clients/invoices; useful for reviewers with their own data.
 - [ ] **10. LangSmith tracing** (~10 min) — env vars only; "how do you debug agents" answer for the interview.
 

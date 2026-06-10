@@ -150,10 +150,29 @@ export function InvoiceTable({ invoices, highlights }: { invoices: Invoice[]; hi
   )
 }
 
+function BehaviorBadge({ behavior }: { behavior?: Client['behavior'] }) {
+  if (!behavior?.label) return <span className="text-ink-soft/50 text-xs">not enough history</span>
+  const tone =
+    behavior.avgDaysLate <= 0
+      ? 'bg-brand-50 text-brand-700 border-brand-200'
+      : behavior.avgDaysLate <= 7
+        ? 'bg-amber-50 text-amber-flag border-amber-200'
+        : 'bg-red-50 text-danger-600 border-red-200'
+  return (
+    <span
+      className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap ${tone}`}
+      title={`Learned from ${behavior.paidCount} paid invoice${behavior.paidCount === 1 ? '' : 's'}`}
+    >
+      {behavior.label.charAt(0).toUpperCase() + behavior.label.slice(1)}
+    </span>
+  )
+}
+
 export function ClientsTable({ clients, highlights }: { clients: Client[]; highlights: Set<string> }) {
   return (
     <div className="card overflow-hidden">
-      <h3 className="font-semibold px-4 pt-4 pb-3">Clients</h3>
+      <h3 className="font-semibold px-4 pt-4 pb-1">Clients</h3>
+      <p className="text-xs text-ink-soft px-4 pb-3">Payment habits are learned from each client's actual history</p>
       {clients.length === 0 ? (
         <EmptyState title="No clients yet">Tell Penny about your first client and she'll set them up.</EmptyState>
       ) : (
@@ -164,7 +183,7 @@ export function ClientsTable({ clients, highlights }: { clients: Client[]; highl
                 <th className="px-4 py-2.5 font-semibold">Client</th>
                 <th className="px-4 py-2.5 font-semibold">Contact</th>
                 <th className="px-4 py-2.5 font-semibold">Email</th>
-                <th className="px-4 py-2.5 font-semibold">Phone</th>
+                <th className="px-4 py-2.5 font-semibold">Payment habits</th>
               </tr>
             </thead>
             <tbody>
@@ -173,7 +192,7 @@ export function ClientsTable({ clients, highlights }: { clients: Client[]; highl
                   <td className="px-4 py-3 font-semibold">{c.name}</td>
                   <td className="px-4 py-3">{c.contactName || '—'}</td>
                   <td className="px-4 py-3 text-ink-soft">{c.email || '—'}</td>
-                  <td className="px-4 py-3 text-ink-soft">{c.phone || '—'}</td>
+                  <td className="px-4 py-3"><BehaviorBadge behavior={c.behavior} /></td>
                 </tr>
               ))}
             </tbody>

@@ -102,7 +102,8 @@ def build_tools(user_id: str) -> list:
 
     @tool
     def list_clients(search: str = "") -> str:
-        """Look up the client list (names, contacts, emails). Optional search filter."""
+        """Look up the client list: names, contacts, emails — and each client's payment
+        personality (how late they usually pay, learned from their history)."""
         params = {"q": search} if search else None
         data = request(user_id, "GET", "/api/clients", params=params)
         clients = [
@@ -111,6 +112,7 @@ def build_tools(user_id: str) -> list:
                 "contact": c.get("contactName", ""),
                 "email": c.get("email", ""),
                 "phone": c.get("phone", ""),
+                "payment_habits": (c.get("behavior") or {}).get("label") or "no history yet",
                 "id": c["_id"],
             }
             for c in data["clients"]
@@ -158,18 +160,45 @@ def build_tools(user_id: str) -> list:
     @tool
     def get_business_metrics() -> str:
         """The money snapshot: outstanding total, overdue total/count, collected this month,
-        what's newly overdue or due soon this week, and recent payments."""
+        what's newly overdue or due soon, recent payments — plus a forecast of when open
+        invoices will actually be paid (based on each client's payment habits)."""
         summary = request(user_id, "GET", "/api/metrics/summary")["summary"]
         briefing = request(user_id, "GET", "/api/metrics/briefing")["briefing"]
-        return json.dumps({"summary": summary, "this_week": briefing})
+        forecast = request(user_id, "GET", "/api/metrics/forecast")["forecast"]
+        return json.dumps(
+            {
+                "summary": summary,
+                "this_week": briefing,
+                "forecast_next_8_weeks": {
+                    "total_expected": forecast["totalExpected"],
+                    "expected_payments": [
+                        {
+                            "invoice": p["number"],
+                            "client": p["client"],
+                            "amount": p["amount"],
+                            "expected_around": str(p["expectedDate"])[:10],
+                            "basis": p["basis"],
+                        }
+                        for p in forecast["expectedPayments"]
+                    ],
+                },
+            }
+        )
 
     @tool
     def make_chart(kind: str) -> str:
-        """Show the user a chart. kind: 'aging' (who's late and by how much, by bucket)
-        or 'cashflow' (billed vs collected, last 6 months). The chart renders in the chat."""
+        """Show the user a chart. kind: 'aging' (who's late and by how much, by bucket),
+        'cashflow' (billed vs collected, last 6 months) or 'forecast' (money expected to
+        arrive over the next 8 weeks, based on payment habits). Renders in the chat."""
+        if kind not in ("aging", "cashflow", "forecast"):
+            return json.dumps({"error": "kind must be 'aging', 'cashflow' or 'forecast'"})
+        if kind == "forecast":
+            forecast = request(user_id, "GET", "/api/metrics/forecast")["forecast"]
+            data = [{"name": w["name"], "value": w["expected"]} for w in forecast["weeks"]]
+            return json.dumps(
+                {"chart": {"kind": "forecast", "title": "Money expected in — next 8 weeks", "data": data}}
+            )
         charts = request(user_id, "GET", "/api/metrics/charts")
-        if kind not in ("aging", "cashflow"):
-            return json.dumps({"error": "kind must be 'aging' or 'cashflow'"})
         title = "Unpaid invoices by how late they are" if kind == "aging" else "Billed vs collected — last 6 months"
         return json.dumps({"chart": {"kind": kind, "title": title, "data": charts[kind]}})
 

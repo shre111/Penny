@@ -5,6 +5,22 @@ export interface Client {
   email: string
   phone: string
   notes: string
+  behavior?: { paidCount: number; avgDaysLate: number; label: string | null } | null
+}
+
+export interface Forecast {
+  weeks: { name: string; expected: number }[]
+  totalExpected: number
+  expectedPayments: {
+    invoiceId: string
+    number: string
+    client: string
+    amount: number
+    expectedDate: string
+    basis: string
+    overdue: boolean
+  }[]
+  beyond: number
 }
 
 export interface LineItem {

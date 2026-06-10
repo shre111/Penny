@@ -3,6 +3,7 @@ import { Client } from '../models/Client.js'
 import { Invoice } from '../models/Invoice.js'
 import { requireUserOrService } from '../auth/middleware.js'
 import { emitChange } from '../realtime.js'
+import { paymentBehavior } from './metrics.js'
 
 export const clientsRouter = Router()
 clientsRouter.use(requireUserOrService)
@@ -11,8 +12,11 @@ clientsRouter.get('/', async (req, res) => {
   const { q } = req.query
   const filter = { userId: req.userId }
   if (q) filter.name = { $regex: q, $options: 'i' }
-  const clients = await Client.find(filter).sort({ name: 1 }).lean()
-  res.json({ clients })
+  const [clients, behavior] = await Promise.all([
+    Client.find(filter).sort({ name: 1 }).lean(),
+    paymentBehavior(req.userId),
+  ])
+  res.json({ clients: clients.map((c) => ({ ...c, behavior: behavior[String(c._id)] || null })) })
 })
 
 clientsRouter.post('/', async (req, res) => {

@@ -1,7 +1,7 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, Cell } from 'recharts'
-import { Banknote, AlertCircle, PiggyBank, Users } from 'lucide-react'
-import type { Summary } from '../../lib/types'
-import { fmtMoney } from '../../lib/format'
+import { Banknote, AlertCircle, PiggyBank, Sparkles, Users } from 'lucide-react'
+import type { Forecast, Summary } from '../../lib/types'
+import { fmtDate, fmtMoney } from '../../lib/format'
 import { useChartColors } from '../../lib/theme'
 
 export function useTooltipStyle() {
@@ -85,6 +85,71 @@ export function AgingChart({ data }: { data: { name: string; value: number }[] }
             </Bar>
           </BarChart>
         </ResponsiveContainer>
+      )}
+    </div>
+  )
+}
+
+/**
+ * The crystal ball: expected money in, week by week, using each client's
+ * payment personality. The why is listed under the chart — trust the math
+ * because you can read it.
+ */
+export function ForecastCard({ forecast }: { forecast: Forecast }) {
+  const c = useChartColors()
+  const tooltip = useTooltipStyle()
+  const empty = forecast.totalExpected === 0
+  return (
+    <div className="card p-4 lg:col-span-2">
+      <div className="flex items-baseline justify-between gap-3 flex-wrap">
+        <div>
+          <h3 className="font-semibold mb-1 flex items-center gap-1.5">
+            <Sparkles className="h-4 w-4 text-copper-500" /> Money coming in — Penny's best guess
+          </h3>
+          <p className="text-xs text-ink-soft">
+            Based on each client's actual payment habits, not just due dates
+          </p>
+        </div>
+        {!empty && (
+          <p className="text-xl font-bold text-brand-700">
+            {fmtMoney(forecast.totalExpected)} <span className="text-xs font-medium text-ink-soft">expected in 8 weeks</span>
+          </p>
+        )}
+      </div>
+      {empty ? (
+        <p className="text-sm text-ink-soft py-8 text-center">No open invoices to forecast — quiet books.</p>
+      ) : (
+        <div className="grid lg:grid-cols-2 gap-4 mt-3">
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={forecast.weeks} margin={{ top: 4, right: 8, left: 8, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={c.grid} vertical={false} />
+              <XAxis dataKey="name" tick={{ fontSize: 10.5, fill: c.tick }} axisLine={false} tickLine={false} interval={0} />
+              <YAxis tickFormatter={(v) => `$${v >= 1000 ? `${v / 1000}k` : v}`} tick={{ fontSize: 10.5, fill: c.tick }} axisLine={false} tickLine={false} width={42} />
+              <Tooltip formatter={(v) => fmtMoney(Number(v))} cursor={{ fill: 'rgba(58,140,97,0.06)' }} {...tooltip} />
+              <Bar dataKey="expected" name="Expected" fill="#5ba980" radius={[5, 5, 0, 0]} maxBarSize={34} />
+            </BarChart>
+          </ResponsiveContainer>
+          <ul className="space-y-1.5 self-center">
+            {forecast.expectedPayments.slice(0, 5).map((p) => (
+              <li key={p.number} className="flex items-baseline justify-between gap-3 text-[13px]">
+                <span className="min-w-0 truncate">
+                  <span className="font-semibold">{p.client}</span>
+                  <span className="text-ink-soft"> · {p.number}</span>
+                  {p.overdue && <span className="ml-1.5 text-[10px] font-bold text-danger-600">OVERDUE</span>}
+                </span>
+                <span className="shrink-0 text-right">
+                  <span className="font-semibold">{fmtMoney(p.amount)}</span>
+                  <span className="block text-[11px] text-ink-soft">~{fmtDate(p.expectedDate)}</span>
+                </span>
+              </li>
+            ))}
+            {forecast.expectedPayments[0]?.basis && (
+              <li className="text-[11px] text-ink-soft/80 pt-1 border-t border-line/60">
+                e.g. {forecast.expectedPayments[0].basis}
+              </li>
+            )}
+          </ul>
+        </div>
       )}
     </div>
   )

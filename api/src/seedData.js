@@ -60,7 +60,17 @@ export async function seedDemoData(userId) {
     // a draft sitting in the books
     { client: 'Sunrise Bakery', amount: 880, issue: -2, due: 28, status: 'draft',
       items: [{ description: 'Seasonal packaging concepts', quantity: 1, unitPrice: 880 }] },
-    // ── paid history: feeds the cash-flow chart + "collected this month" ──
+    // ── paid history: feeds the cash-flow chart, "collected this month",
+    //    and each client's payment personality (Acme = chronic late payer,
+    //    Bright Smiles = pays on time, Riverside = mildly late) ──
+    { client: 'Acme Hardware', amount: 2400, issue: -130, due: -100, status: 'paid', paidOn: -88,
+      items: [{ description: 'Trade show booth design', quantity: 1, unitPrice: 2400 }] },
+    { client: 'Acme Hardware', amount: 1900, issue: -95, due: -65, status: 'paid', paidOn: -50,
+      items: [{ description: 'Spring flyer print files', quantity: 1, unitPrice: 1900 }] },
+    { client: 'Bright Smiles Dental', amount: 1500, issue: -60, due: -30, status: 'paid', paidOn: -31,
+      items: [{ description: 'Patient recall postcards', quantity: 1, unitPrice: 1500 }] },
+    { client: 'Riverside Café', amount: 1200, issue: -90, due: -60, status: 'paid', paidOn: -52,
+      items: [{ description: 'Window decal design', quantity: 1, unitPrice: 1200 }] },
     { client: 'Sunrise Bakery', amount: 1500, issue: -150, due: -120, status: 'paid', paidOn: -118,
       items: [{ description: 'Logo design', quantity: 1, unitPrice: 1500 }] },
     { client: 'Cobalt Fitness', amount: 3600, issue: -140, due: -110, status: 'paid', paidOn: -112,

@@ -13,6 +13,35 @@ async function loadInvoices(userId) {
   return invoices.map((i) => i.toObject({ virtuals: true }))
 }
 
+/**
+ * Payment personalities: how late does each client actually pay?
+ * avgDaysLate = mean(final payment date − due date) over their paid invoices.
+ * Needs ≥2 paid invoices before we claim to know someone's habits.
+ */
+export async function paymentBehavior(userId) {
+  const paid = await Invoice.find({ userId, status: 'paid' }).lean()
+  const samples = {}
+  for (const inv of paid) {
+    const last = inv.payments?.length ? inv.payments[inv.payments.length - 1].date : null
+    if (!last || !inv.dueDate) continue
+    const days = Math.round((new Date(last) - new Date(inv.dueDate)) / 86400000)
+    const key = String(inv.clientId)
+    ;(samples[key] ||= []).push(days)
+  }
+  const behavior = {}
+  for (const [clientId, days] of Object.entries(samples)) {
+    const avg = Math.round(days.reduce((s, d) => s + d, 0) / days.length)
+    let label = null
+    if (days.length >= 2) {
+      if (avg <= 0) label = 'pays on time'
+      else if (avg <= 7) label = 'usually a few days late'
+      else label = `usually ~${avg} days late`
+    }
+    behavior[clientId] = { paidCount: days.length, avgDaysLate: avg, label }
+  }
+  return behavior
+}
+
 metricsRouter.get('/summary', async (req, res) => {
   const invoices = await loadInvoices(req.userId)
   const now = new Date()
@@ -85,6 +114,67 @@ metricsRouter.get('/charts', async (req, res) => {
   }
 
   res.json({ aging, cashflow: months.map(({ key, ...rest }) => rest) })
+})
+
+/**
+ * The crystal ball: when is money actually going to arrive?
+ * Expected payment date = due date shifted by the client's payment personality;
+ * already-slipped invoices are assumed to land a few days out.
+ */
+metricsRouter.get('/forecast', async (req, res) => {
+  const HORIZON_DAYS = 56 // 8 weeks
+  const invoices = await loadInvoices(req.userId)
+  const behavior = await paymentBehavior(req.userId)
+  const now = new Date()
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+  const expectedPayments = []
+  for (const inv of invoices) {
+    if (inv.status !== 'sent' || inv.balance <= 0) continue
+    const clientKey = String(inv.clientId?._id || inv.clientId)
+    const b = behavior[clientKey]
+    const shiftDays = Math.max(0, b?.avgDaysLate ?? 0)
+    let expected = new Date(new Date(inv.dueDate).getTime() + shiftDays * 86400000)
+    // overdue or imminent-but-slipping: assume it lands a few days from now
+    if (expected < new Date(startOfToday.getTime() + 2 * 86400000)) {
+      expected = new Date(startOfToday.getTime() + 3 * 86400000)
+    }
+    expectedPayments.push({
+      invoiceId: inv._id,
+      number: inv.number,
+      client: inv.clientId?.name || '—',
+      amount: inv.balance,
+      dueDate: inv.dueDate,
+      expectedDate: expected,
+      basis: b?.label ? `${inv.clientId?.name} ${b.label}` : 'no payment history yet — assuming on time',
+      overdue: inv.effectiveStatus === 'overdue',
+    })
+  }
+  expectedPayments.sort((a, b) => a.expectedDate - b.expectedDate)
+
+  const weeks = []
+  for (let w = 0; w < HORIZON_DAYS / 7; w++) {
+    const start = new Date(startOfToday.getTime() + w * 7 * 86400000)
+    const end = new Date(start.getTime() + 7 * 86400000)
+    const expected = expectedPayments
+      .filter((p) => p.expectedDate >= start && p.expectedDate < end)
+      .reduce((s, p) => s + p.amount, 0)
+    weeks.push({
+      name: start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      expected: Math.round(expected),
+    })
+  }
+  const horizonEnd = new Date(startOfToday.getTime() + HORIZON_DAYS * 86400000)
+  const within = expectedPayments.filter((p) => p.expectedDate < horizonEnd)
+
+  res.json({
+    forecast: {
+      weeks,
+      totalExpected: Math.round(within.reduce((s, p) => s + p.amount, 0)),
+      expectedPayments: within.slice(0, 8),
+      beyond: expectedPayments.length - within.length,
+    },
+  })
 })
 
 // Powers Penny's proactive opening message
