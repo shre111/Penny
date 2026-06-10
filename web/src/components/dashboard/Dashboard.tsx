@@ -6,8 +6,9 @@ import { api } from '../../lib/api'
 import { Spinner } from '../ui'
 import { KpiCards, AgingChart, CashflowChart } from './widgets'
 import { InvoiceTable, ClientsTable, Outbox } from './tables'
+import { ActivityFeed } from './ActivityFeed'
 
-type Tab = 'overview' | 'invoices' | 'clients' | 'outbox'
+type Tab = 'overview' | 'invoices' | 'clients' | 'outbox' | 'activity'
 
 export function Dashboard() {
   const [tab, setTab] = useState<Tab>('overview')
@@ -16,13 +17,16 @@ export function Dashboard() {
   const invoices = useLiveData<{ invoices: Invoice[] }>('/api/invoices?status=all', ['invoice'])
   const clients = useLiveData<{ clients: Client[] }>('/api/clients', ['client'])
   const emails = useLiveData<{ emails: EmailRecord[] }>('/api/emails', ['email'])
+  const activities = useLiveData<{ activities: any[] }>('/api/activities', ['invoice', 'client', 'email'])
   const [seeding, setSeeding] = useState(false)
 
+  const queuedCount = emails.data?.emails.filter((e) => e.status === 'queued').length || undefined
   const tabs: { key: Tab; label: string; badge?: number }[] = [
     { key: 'overview', label: 'Overview' },
     { key: 'invoices', label: 'Invoices', badge: summary.data?.summary.overdueCount || undefined },
     { key: 'clients', label: 'Clients' },
-    { key: 'outbox', label: 'Outbox' },
+    { key: 'outbox', label: 'Outbox', badge: queuedCount },
+    { key: 'activity', label: 'Activity' },
   ]
 
   if (!summary.data || !invoices.data) {
@@ -87,6 +91,7 @@ export function Dashboard() {
       {tab === 'invoices' && <InvoiceTable invoices={invoices.data.invoices} highlights={invoices.highlights} />}
       {tab === 'clients' && <ClientsTable clients={clients.data?.clients || []} highlights={clients.highlights} />}
       {tab === 'outbox' && <Outbox emails={emails.data?.emails || []} highlights={emails.highlights} />}
+      {tab === 'activity' && <ActivityFeed activities={activities.data?.activities || []} refetch={activities.refetch} />}
     </div>
   )
 }

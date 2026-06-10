@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ChevronDown, Paperclip, Plus, SendHorizonal, Trash2 } from 'lucide-react'
+import { ChevronDown, Mic, Paperclip, Plus, SendHorizonal, Trash2 } from 'lucide-react'
 import { api } from '../../lib/api'
 import { useAuth } from '../../lib/auth'
-import type { Briefing, ChatSession } from '../../lib/types'
+import type { Briefing, ChatSession, EmailRecord } from '../../lib/types'
 import { fmtMoney } from '../../lib/format'
 import { useChatStream } from '../../hooks/useChatStream'
+import { useLiveData } from '../../hooks/useLiveData'
+import { useSpeechInput } from '../../hooks/useSpeechInput'
+import { onAskPenny } from '../../lib/askPenny'
 import { CoinMark, Spinner } from '../ui'
 import { MessageView } from './MessageView'
+import { QueuedDraftsCard } from './QueuedDraftsCard'
 
 const STARTER_CHIPS = [
   'Who owes me money?',
@@ -26,6 +30,29 @@ export function ChatPanel() {
   const [input, setInput] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // overnight drafts waiting for approval; snapshot sticks so the card's
+  // per-draft "Sent ✓ / Skipped" states stay visible after handling
+  const queued = useLiveData<{ emails: EmailRecord[] }>('/api/emails?status=queued', ['email'])
+  const [draftsSnapshot, setDraftsSnapshot] = useState<EmailRecord[]>([])
+  useEffect(() => {
+    if ((queued.data?.emails.length ?? 0) > 0 && draftsSnapshot.length === 0) {
+      setDraftsSnapshot(queued.data!.emails)
+    }
+  }, [queued.data, draftsSnapshot.length])
+
+  // dashboard → chat: prefill the composer from anywhere in the app
+  useEffect(
+    () =>
+      onAskPenny((text) => {
+        setInput(text)
+        textareaRef.current?.focus()
+      }),
+    []
+  )
+
+  const speech = useSpeechInput((text) => setInput(text))
 
   // load (or start) a conversation
   useEffect(() => {
@@ -48,7 +75,7 @@ export function ChatPanel() {
   useEffect(() => {
     const el = scrollRef.current
     if (el) el.scrollTop = el.scrollHeight
-  }, [messages, streaming])
+  }, [messages, streaming, draftsSnapshot])
 
   const newConversation = async () => {
     const created = await api<{ session: ChatSession }>('/api/chat/sessions', { method: 'POST' })
@@ -175,6 +202,9 @@ export function ChatPanel() {
         {messages.map((m) => (
           <MessageView key={m._id} message={m} onResume={resume} onPatchArtifact={patchMessageArtifact} />
         ))}
+        {draftsSnapshot.length > 0 && (
+          <QueuedDraftsCard drafts={draftsSnapshot} onHandled={() => queued.refetch()} />
+        )}
         {streaming && (
           <MessageView
             message={{ role: 'assistant', content: streaming.content, events: streaming.events, artifacts: streaming.artifacts }}
@@ -210,9 +240,10 @@ export function ChatPanel() {
             }}
           />
           <textarea
+            ref={textareaRef}
             className="flex-1 bg-transparent resize-none outline-none text-[0.95rem] max-h-36 py-1.5 placeholder:text-ink-soft/50"
             rows={1}
-            placeholder="Ask about your money, or tell me what to do…"
+            placeholder={speech.listening ? 'Listening… speak now' : 'Ask about your money, or tell me what to do…'}
             value={input}
             onChange={(e) => {
               setInput(e.target.value)
@@ -228,6 +259,19 @@ export function ChatPanel() {
             disabled={busy && !streaming}
             aria-label="Message Penny"
           />
+          {speech.supported && (
+            <button
+              className={`p-1.5 shrink-0 cursor-pointer transition-colors ${
+                speech.listening ? 'text-danger-500 animate-pulse' : 'text-ink-soft hover:text-brand-700'
+              }`}
+              onClick={speech.toggle}
+              disabled={busy}
+              aria-label={speech.listening ? 'Stop listening' : 'Speak instead of typing'}
+              title={speech.listening ? 'Stop listening' : 'Speak instead of typing'}
+            >
+              <Mic className="h-5 w-5" />
+            </button>
+          )}
           <button
             className="btn-primary p-2.5 rounded-xl shrink-0"
             onClick={() => submit()}

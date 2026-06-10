@@ -149,6 +149,13 @@ def build_tools(user_id: str) -> list:
         return json.dumps({"updated": {"name": data["client"]["name"], "email": data["client"].get("email", "")}})
 
     @tool
+    def get_invoice_pdf_link(invoice_number: str) -> str:
+        """Get a downloadable PDF link for an invoice (e.g. to share or print).
+        Present it to the user as a markdown link."""
+        inv = _find_invoice(invoice_number)
+        return json.dumps({"pdf_link": f"/api/invoices/{inv['id']}/pdf", "number": inv["number"]})
+
+    @tool
     def get_business_metrics() -> str:
         """The money snapshot: outstanding total, overdue total/count, collected this month,
         what's newly overdue or due soon this week, and recent payments."""
@@ -215,6 +222,7 @@ def build_tools(user_id: str) -> list:
             list_clients,
             create_client,
             update_client,
+            get_invoice_pdf_link,
         ],
         "analyst": [get_business_metrics, make_chart],
         "outreach": [send_email],

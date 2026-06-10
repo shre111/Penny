@@ -15,6 +15,11 @@ import { memoriesRouter } from './routes/memories.js'
 import { chatRouter } from './routes/chat.js'
 import { uploadsRouter } from './routes/uploads.js'
 import { demoRouter } from './routes/demo.js'
+import { activitiesRouter } from './routes/activities.js'
+import { overnightRouter } from './routes/overnight.js'
+import { invoicePdfHandler } from './routes/invoicePdf.js'
+import { requireAuth } from './auth/middleware.js'
+import { startOvernightSchedule } from './overnight.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -35,6 +40,9 @@ app.use('/api/memories', memoriesRouter)
 app.use('/api/chat', chatRouter)
 app.use('/api/uploads', uploadsRouter)
 app.use('/api/demo', demoRouter)
+app.use('/api/activities', activitiesRouter)
+app.use('/api/overnight', overnightRouter)
+app.get('/api/invoices/:id/pdf', requireAuth, invoicePdfHandler)
 
 // Production: serve the built SPA from the same origin
 const webDist = path.join(__dirname, '..', '..', 'web', 'dist')
@@ -55,6 +63,8 @@ app.use((err, _req, res, _next) => {
 
 const server = http.createServer(app)
 attachRealtime(server)
+
+startOvernightSchedule()
 
 server.listen(config.port, () => {
   console.log(`[api] listening on http://localhost:${config.port}`)

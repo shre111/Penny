@@ -38,6 +38,7 @@ FRIENDLY_RUNNING = {
     "save_memory": "Noting that down…",
     "ask_bookkeeper": "Asking the Bookkeeper…",
     "ask_analyst": "Asking the Analyst…",
+    "get_invoice_pdf_link": "Preparing the PDF…",
 }
 FRIENDLY_DONE = {
     "list_invoices": "Checked the invoices",
@@ -53,6 +54,7 @@ FRIENDLY_DONE = {
     "save_memory": "Noted for next time",
     "ask_bookkeeper": "Bookkeeper reported back",
     "ask_analyst": "Analyst reported back",
+    "get_invoice_pdf_link": "PDF ready",
 }
 
 

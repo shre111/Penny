@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { ChevronDown, Mail, FileText, Camera } from 'lucide-react'
+import { BellRing, Camera, ChevronDown, FileDown, FileText, Mail, MessageCircle, MoonStar } from 'lucide-react'
 import type { Client, EmailRecord, Invoice } from '../../lib/types'
 import { dueLabel, fmtDate, fmtMoney, STATUS_LABELS, STATUS_STYLES } from '../../lib/format'
-import { EmptyState } from '../ui'
+import { askPenny } from '../../lib/askPenny'
+import { api } from '../../lib/api'
+import { EmptyState, Spinner } from '../ui'
 
 function StatusPill({ status }: { status: string }) {
   return (
@@ -74,13 +76,14 @@ export function InvoiceTable({ invoices, highlights }: { invoices: Invoice[]; hi
                 <th className="px-4 py-2.5 font-semibold text-right">Amount</th>
                 <th className="px-4 py-2.5 font-semibold">Status</th>
                 <th className="px-4 py-2.5 font-semibold text-right">Due</th>
+                <th className="px-4 py-2.5" aria-label="Actions" />
               </tr>
             </thead>
             <tbody>
               {filtered.map((inv) => (
                 <tr
                   key={inv._id}
-                  className={`border-b border-line/60 last:border-0 hover:bg-paper/50 transition-colors ${
+                  className={`group border-b border-line/60 last:border-0 hover:bg-paper/50 transition-colors ${
                     highlights.has(inv._id) ? 'animate-glow' : ''
                   }`}
                 >
@@ -104,6 +107,38 @@ export function InvoiceTable({ invoices, highlights }: { invoices: Invoice[]; hi
                   <td className={`px-4 py-3 text-right whitespace-nowrap text-xs ${inv.effectiveStatus === 'overdue' ? 'text-danger-600 font-semibold' : 'text-ink-soft'}`}>
                     {dueLabel(inv)}
                     <span className="block text-[11px] text-ink-soft/70">{fmtDate(inv.dueDate)}</span>
+                  </td>
+                  <td className="px-2 py-3 whitespace-nowrap text-right">
+                    <span className="inline-flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        className="p-1.5 rounded-lg text-ink-soft hover:text-brand-700 hover:bg-brand-50 cursor-pointer"
+                        title={`Ask Penny about ${inv.number}`}
+                        aria-label={`Ask Penny about ${inv.number}`}
+                        onClick={() => askPenny(`Tell me about invoice ${inv.number} — where it stands and what you'd do next.`)}
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                      </button>
+                      {inv.effectiveStatus === 'overdue' && (
+                        <button
+                          className="p-1.5 rounded-lg text-ink-soft hover:text-copper-600 hover:bg-copper-100 cursor-pointer"
+                          title={`Have Penny chase ${inv.number}`}
+                          aria-label={`Have Penny chase ${inv.number}`}
+                          onClick={() => askPenny(`Draft a payment reminder for invoice ${inv.number}.`)}
+                        >
+                          <BellRing className="h-4 w-4" />
+                        </button>
+                      )}
+                      <a
+                        className="p-1.5 rounded-lg text-ink-soft hover:text-brand-700 hover:bg-brand-50 cursor-pointer"
+                        title={`Download ${inv.number} as PDF`}
+                        aria-label={`Download ${inv.number} as PDF`}
+                        href={`/api/invoices/${inv._id}/pdf`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <FileDown className="h-4 w-4" />
+                      </a>
+                    </span>
                   </td>
                 </tr>
               ))}
@@ -149,12 +184,52 @@ export function ClientsTable({ clients, highlights }: { clients: Client[]; highl
   )
 }
 
+const EMAIL_PILL: Record<string, { label: string; cls: string }> = {
+  sent: { label: 'Sent via Gmail', cls: 'bg-brand-100 text-brand-800' },
+  simulated: { label: 'Saved (not sent)', cls: 'bg-stone-100 text-ink-soft' },
+  queued: { label: 'Waiting for your OK', cls: 'bg-copper-100 text-copper-700' },
+  dismissed: { label: 'Skipped', cls: 'bg-stone-100 text-ink-soft/70' },
+  failed: { label: 'Failed', cls: 'bg-red-50 text-danger-600' },
+}
+
 export function Outbox({ emails, highlights }: { emails: EmailRecord[]; highlights: Set<string> }) {
   const [open, setOpen] = useState<string | null>(null)
+  const [running, setRunning] = useState(false)
+  const [runResult, setRunResult] = useState('')
+
+  const runOvernight = async () => {
+    setRunning(true)
+    setRunResult('')
+    try {
+      const r = await api<{ queued: number; skipped: number }>('/api/overnight/run', { method: 'POST' })
+      setRunResult(
+        r.queued > 0
+          ? `Queued ${r.queued} new draft${r.queued === 1 ? '' : 's'} — review them in the chat`
+          : 'Nothing new to chase — everyone is either current or recently reminded'
+      )
+    } catch (err: any) {
+      setRunResult(err.message)
+    } finally {
+      setRunning(false)
+    }
+  }
+
   return (
     <div className="card overflow-hidden">
-      <h3 className="font-semibold px-4 pt-4 pb-1">Outbox</h3>
-      <p className="text-xs text-ink-soft px-4 pb-3">Every email Penny has drafted or sent for you</p>
+      <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-1">
+        <div>
+          <h3 className="font-semibold">Outbox</h3>
+          <p className="text-xs text-ink-soft pb-2">Every email Penny has drafted or sent for you</p>
+        </div>
+        <div className="text-right">
+          <button className="btn-ghost text-xs py-1.5 px-3" onClick={runOvernight} disabled={running}>
+            {running ? <Spinner className="h-3.5 w-3.5" /> : <MoonStar className="h-3.5 w-3.5" />}
+            Run the overnight check now
+          </button>
+          <p className="text-[10.5px] text-ink-soft/70 mt-1">runs by itself every morning at 6:00</p>
+          {runResult && <p className="text-[11px] text-brand-700 font-medium mt-0.5 max-w-56">{runResult}</p>}
+        </div>
+      </div>
       {emails.length === 0 ? (
         <EmptyState icon={<Mail className="h-8 w-8" />} title="Nothing sent yet">
           Try “Chase my overdue invoices” — you'll approve every email before it goes anywhere.
@@ -173,10 +248,8 @@ export function Outbox({ emails, highlights }: { emails: EmailRecord[]; highligh
                     <p className="text-xs text-ink-soft truncate">to {e.to} · {fmtDate(e.createdAt)}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
-                      e.status === 'sent' ? 'bg-brand-100 text-brand-800' : e.status === 'failed' ? 'bg-red-50 text-danger-600' : 'bg-stone-100 text-ink-soft'
-                    }`}>
-                      {e.status === 'sent' ? 'Sent via Gmail' : e.status === 'failed' ? 'Failed' : 'Saved (not sent)'}
+                    <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${(EMAIL_PILL[e.status] || EMAIL_PILL.simulated).cls}`}>
+                      {(EMAIL_PILL[e.status] || EMAIL_PILL.simulated).label}
                     </span>
                     <ChevronDown className={`h-4 w-4 text-ink-soft transition-transform ${open === e._id ? 'rotate-180' : ''}`} />
                   </div>

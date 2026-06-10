@@ -12,7 +12,9 @@ from pydantic import BaseModel
 
 from . import config
 from .agent import build_agent
+from .composio_client import send_gmail
 from .extraction import extract_invoice
+from .overnight import run_overnight
 from .streaming import stream_agent_sse
 
 app = FastAPI(title="penny-ai")
@@ -65,6 +67,33 @@ def resume(body: ResumeIn, x_service_token: str | None = Header(default=None)):
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+class OvernightIn(BaseModel):
+    user_id: str
+    user_name: str = ""
+    business_name: str = ""
+
+
+@app.post("/overnight")
+def overnight(body: OvernightIn, x_service_token: str | None = Header(default=None)):
+    """Draft + queue reminder emails for neglected overdue invoices (cron / manual)."""
+    check_service_token(x_service_token)
+    return run_overnight(body.user_id, body.user_name, body.business_name)
+
+
+class SendIn(BaseModel):
+    to: str
+    subject: str
+    body: str
+
+
+@app.post("/send")
+def send(body: SendIn, x_service_token: str | None = Header(default=None)):
+    """Send an owner-approved email (Composio Gmail, simulated fallback)."""
+    check_service_token(x_service_token)
+    status, error = send_gmail(body.to, body.subject, body.body)
+    return {"status": status, "error": error}
 
 
 @app.post("/extract")

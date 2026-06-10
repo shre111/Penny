@@ -13,7 +13,7 @@ npm run build      # builds web/dist (Express serves it in prod = single origin)
 - Root `.env` is shared by both servers in dev (gitignored). `ai/.venv` is Python 3.13 (`python3.14` venv is broken on this machine — ensurepip fails).
 - Ports: web 5173 → proxies `/api` + `/socket.io` to api 4001; ai on 8400. **Do not use 8000** (a Docker Chroma container squats on it) — and 4001 not 4000 (user's choice).
 - Local mongod already runs as a service on 27017.
-- `PENNY_MODEL=scripted` = deterministic dev model, zero API keys, real tools/graph/HITL — use it for E2E tests instead of burning Gemini quota. Real model: `google_genai:gemini-3-flash-preview` + `GOOGLE_API_KEY`. Free tier = 10 req/min and one multi-agent turn costs 4–7 requests — pace test prompts.
+- `PENNY_MODEL=scripted` = deterministic dev model, zero API keys, real tools/graph/HITL — use it for E2E tests instead of burning Gemini quota. Real models (one multi-agent turn = 4–7 requests): `google_genai:gemini-3.1-flash-lite` is the daily driver (~1,500 req/day free); `gemini-3-flash-preview` is better but only **20 req/day free** — demo recordings only.
 - `PENNY_MULTI_AGENT=false` collapses to a single agent (debugging aid).
 
 ## Map

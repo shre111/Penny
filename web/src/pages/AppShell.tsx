@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { LayoutDashboard, LogOut, MessageCircle } from 'lucide-react'
 import { useAuth } from '../lib/auth'
+import { onAskPenny } from '../lib/askPenny'
 import { Wordmark } from '../components/ui'
 import { Dashboard } from '../components/dashboard/Dashboard'
 import { ChatPanel } from '../components/chat/ChatPanel'
@@ -13,6 +14,9 @@ import { ChatPanel } from '../components/chat/ChatPanel'
 export default function AppShell() {
   const { user, logout } = useAuth()
   const [mobileView, setMobileView] = useState<'dashboard' | 'chat'>('chat')
+
+  // a dashboard "Ask Penny" tap should reveal the chat on small screens
+  useEffect(() => onAskPenny(() => setMobileView('chat')), [])
 
   return (
     <div className="h-screen flex flex-col">

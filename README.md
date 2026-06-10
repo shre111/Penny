@@ -98,7 +98,7 @@ npm run dev                           # api :4001 · ai :8400 · web :5173
 Open http://localhost:5173 — sign in with the demo account, or sign up and click **Load sample business**.
 
 > No LLM key? Leave `PENNY_MODEL=scripted` — everything works with canned language.
-> Real brain: set `PENNY_MODEL=google_genai:gemini-3-flash-preview` and a free `GOOGLE_API_KEY` from [AI Studio](https://aistudio.google.com).
+> Real brain: a free `GOOGLE_API_KEY` from [AI Studio](https://aistudio.google.com) with `PENNY_MODEL=google_genai:gemini-3.1-flash-lite` (~1,500 free requests/day). `gemini-3-flash-preview` is sharper but its free tier is only ~20 requests/day — save it for demos.
 
 ## Deploy (Render + Atlas, free tiers)
 

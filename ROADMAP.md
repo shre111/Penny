@@ -12,21 +12,21 @@ Goal: go past the basics before the M32 deadline (~June 12, 2026). Ranked by imp
 
 ## Next (the differentiators)
 
-- [ ] **3. Overnight agent — "Penny works while you sleep"** (~3h) ⭐ highest signal
-  Daily cron (node-cron in `api/`, or Render cron) that: finds invoices that became overdue → drafts reminder emails → queues them as pending approvals → user logs in to a "While you were away" card with approve/edit/skip buttons. Autonomous agency + human-in-the-loop safety in one feature. Implementation sketch: reuse the outbox pattern (pending `emails` docs with `status:'queued'` + an approve endpoint) rather than LangGraph interrupts — no live stream exists overnight.
-- [ ] **4. Voice input** (~1h)
-  Web Speech API mic button in the composer (`webkitSpeechRecognition`, Chrome/Safari). Perfect for the 35+, non-technical persona; great demo beat.
-- [ ] **5. Audit trail + undo** (~2h)
-  Persist the already-emitted `entity:changed` events to an `activities` collection → "Recent activity" tab (every change, human vs Penny, when) + Undo (void/delete) on agent-created records. Trust-building; very "real business software".
-- [ ] **6. Dashboard → chat actions** (~1h)
-  Click an invoice row → "Ask Penny about this" prefills the composer ("What's the story with INV-0001?"). Control then flows in BOTH directions between app and chat — a story no one else will have.
+- [x] **3. Overnight agent — "Penny works while you sleep"** ⭐ — node-cron daily at 06:00 + "Run the overnight check now" button (Outbox tab). Drafts via the real model (template fallback so the night shift never dies), queues as `status:'queued'` emails, "While you were away" card in chat with per-draft Send / Edit / Skip. Idempotent (cooldown + already-queued checks); double-approve returns 409.
+- [x] **4. Voice input** — mic button in the composer (Web Speech API), live transcripts, hidden on unsupported browsers.
+- [x] **5. Audit trail + undo** — every `emitChange` persists an `Activity`; "Activity" tab shows who did what (You vs Penny) with one-click Undo on agent-created records.
+- [x] **6. Dashboard → chat actions** — hover an invoice row: Ask Penny / Chase (overdue only) / PDF. Control flows both directions.
 
 ## If time remains
 
-- [ ] **7. PDF invoice generation** (~2–3h) — "Invoice Acme $450 and send it" → branded PDF (pdfkit) attached to the email / downloadable from the dashboard.
-- [ ] **8. Public landing page** (~1.5h) — submission URL opens to a product page, not a login wall.
+- [x] **7. PDF invoice generation** — branded PDF per invoice (`GET /api/invoices/:id/pdf`), row download button + `get_invoice_pdf_link` agent tool.
+- [x] **8. Public landing page** — `/` is a product page when signed out: live app screenshot, feature grid, "Try the live demo" button that signs into the demo account.
 - [ ] **9. CSV import** (~1–2h) — bulk-load clients/invoices; useful for reviewers with their own data.
 - [ ] **10. LangSmith tracing** (~10 min) — env vars only; "how do you debug agents" answer for the interview.
+
+## ⚠ Model quota notes (learned the hard way)
+
+`gemini-3-flash-preview` free tier = **20 requests/day** — that's ~3 chat turns. Use it ONLY for the demo recording (quota resets daily; record early). Daily driver is `gemini-3.1-flash-lite` (~1,500/day, 15/min) — verified working with the full multi-agent + overnight stack. `PENNY_MODEL=scripted` for free UI iteration.
 
 ## Always last
 

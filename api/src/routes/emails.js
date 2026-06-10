@@ -1,18 +1,22 @@
 import { Router } from 'express'
 import { Email } from '../models/Email.js'
 import { Invoice } from '../models/Invoice.js'
-import { requireUserOrService } from '../auth/middleware.js'
+import { requireAuth, requireUserOrService } from '../auth/middleware.js'
 import { emitChange } from '../realtime.js'
+import { config } from '../config.js'
 
 export const emailsRouter = Router()
 emailsRouter.use(requireUserOrService)
 
 emailsRouter.get('/', async (req, res) => {
-  const emails = await Email.find({ userId: req.userId }).sort({ createdAt: -1 }).limit(50).lean()
+  const filter = { userId: req.userId }
+  if (req.query.status) filter.status = req.query.status
+  const emails = await Email.find(filter).sort({ createdAt: -1 }).limit(50).lean()
   res.json({ emails })
 })
 
-// Recorded by the AI service after a send attempt (real or simulated)
+// Recorded by the AI service after a send attempt (real or simulated),
+// or queued ('queued') by the overnight agent for the owner to approve.
 emailsRouter.post('/', async (req, res) => {
   const { to, subject, body, status, provider, invoiceId, clientId, error } = req.body || {}
   if (!to || !subject || !body || !status) {
@@ -29,9 +33,52 @@ emailsRouter.post('/', async (req, res) => {
     clientId: clientId || undefined,
     error: error || undefined,
   })
-  if (invoiceId && status !== 'failed') {
+  if (invoiceId && ['sent', 'simulated'].includes(status)) {
     await Invoice.findOneAndUpdate({ _id: invoiceId, userId: req.userId }, { lastReminderAt: new Date() })
   }
   emitChange(req.userId, { entity: 'email', action: 'created', id: email._id, actor: req.actor, doc: email })
   res.status(201).json({ email })
+})
+
+// Owner approves an overnight draft (optionally edited) → it actually sends.
+emailsRouter.post('/:id/approve', requireAuth, async (req, res) => {
+  const email = await Email.findOne({ _id: req.params.id, userId: req.userId, status: 'queued' })
+  if (!email) return res.status(409).json({ error: 'This draft was already handled' })
+
+  if (req.body?.subject?.trim()) email.subject = req.body.subject.trim()
+  if (req.body?.body?.trim()) email.body = req.body.body.trim()
+
+  let result = { status: 'simulated', error: null }
+  try {
+    const upstream = await fetch(`${config.aiUrl}/send`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Service-Token': config.serviceToken },
+      body: JSON.stringify({ to: email.to, subject: email.subject, body: email.body }),
+    })
+    if (upstream.ok) result = await upstream.json()
+  } catch {
+    /* AI service down → record as simulated rather than losing the approval */
+  }
+  email.status = result.status === 'failed' ? 'failed' : result.status
+  email.provider = result.status === 'sent' ? 'composio-gmail' : 'simulated'
+  email.error = result.error || undefined
+  await email.save()
+
+  if (email.invoiceId && ['sent', 'simulated'].includes(email.status)) {
+    await Invoice.findOneAndUpdate({ _id: email.invoiceId, userId: req.userId }, { lastReminderAt: new Date() })
+  }
+  emitChange(req.userId, { entity: 'email', action: 'updated', id: email._id, actor: 'user', doc: email })
+  res.json({ email })
+})
+
+// Owner skips an overnight draft.
+emailsRouter.post('/:id/dismiss', requireAuth, async (req, res) => {
+  const email = await Email.findOneAndUpdate(
+    { _id: req.params.id, userId: req.userId, status: 'queued' },
+    { status: 'dismissed' },
+    { returnDocument: 'after' }
+  )
+  if (!email) return res.status(409).json({ error: 'This draft was already handled' })
+  emitChange(req.userId, { entity: 'email', action: 'updated', id: email._id, actor: 'user', doc: email })
+  res.json({ email })
 })

@@ -3,6 +3,7 @@ import { Client } from './models/Client.js'
 import { Invoice, nextInvoiceNumber } from './models/Invoice.js'
 import { Email } from './models/Email.js'
 import { Memory } from './models/Memory.js'
+import { Activity } from './models/Activity.js'
 
 const daysFromNow = (d) => new Date(Date.now() + d * 86400000)
 
@@ -18,6 +19,7 @@ export async function seedDemoData(userId) {
     Invoice.deleteMany({ userId }),
     Email.deleteMany({ userId }),
     Memory.deleteMany({ userId }),
+    Activity.deleteMany({ userId }),
     mongoose.connection.collection('counters').deleteOne({ _id: `${userId}:invoice` }),
   ])
 

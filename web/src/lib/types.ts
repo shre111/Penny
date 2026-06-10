@@ -58,8 +58,9 @@ export interface EmailRecord {
   to: string
   subject: string
   body: string
-  status: 'sent' | 'simulated' | 'failed'
+  status: 'queued' | 'sent' | 'simulated' | 'failed' | 'dismissed'
   provider: string
+  invoiceId?: string
   createdAt: string
 }
 

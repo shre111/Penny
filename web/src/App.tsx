@@ -3,9 +3,11 @@ import { AuthProvider, useAuth } from './lib/auth'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import AppShell from './pages/AppShell'
+import Landing from './pages/Landing'
 import { Spinner } from './components/ui'
 
-function Guard({ children }: { children: React.ReactNode }) {
+// '/' is the product when signed in, the pitch when not
+function Home() {
   const { user, loading } = useAuth()
   if (loading) {
     return (
@@ -14,8 +16,7 @@ function Guard({ children }: { children: React.ReactNode }) {
       </div>
     )
   }
-  if (!user) return <Navigate to="/login" replace />
-  return <>{children}</>
+  return user ? <AppShell /> : <Landing />
 }
 
 function Public({ children }: { children: React.ReactNode }) {
@@ -32,7 +33,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Public><Login /></Public>} />
           <Route path="/signup" element={<Public><Signup /></Public>} />
-          <Route path="/" element={<Guard><AppShell /></Guard>} />
+          <Route path="/" element={<Home />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
