@@ -8,7 +8,8 @@
     "api"
   ],
   "scripts": {
-    "dev": "concurrently -n api,ai,web -c blue,magenta,green \"npm run dev -w api\" \"npm run dev:ai\" \"npm run dev -w web\"",
+    "dev": "npm run free-ports && concurrently -n api,ai,web -c blue,magenta,green \"npm run dev -w api\" \"npm run dev:ai\" \"npm run dev -w web\"",
+    "free-ports": "(lsof -t -i :4001 -i :8400 -sTCP:LISTEN | xargs kill 2>/dev/null); exit 0",
     "dev:ai": "cd ai && .venv/bin/uvicorn app.main:app --reload --port 8400",
     "build": "npm run build -w web",
     "seed": "npm run seed -w api",
