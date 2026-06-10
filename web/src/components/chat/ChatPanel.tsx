@@ -111,7 +111,7 @@ export function ChatPanel() {
   const showWelcome = !loadingHistory && messages.length === 0 && !streaming
 
   return (
-    <section className="flex flex-col h-full bg-white border-l border-line" aria-label="Chat with Penny">
+    <section className="flex flex-col h-full bg-card border-l border-line" aria-label="Chat with Penny">
       {/* header */}
       <header className="flex items-center justify-between gap-2 px-4 py-3 border-b border-line">
         <div className="flex items-center gap-2.5 min-w-0">

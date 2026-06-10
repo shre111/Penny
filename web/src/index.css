@@ -10,6 +10,7 @@
   --font-display: "Fraunces", Georgia, serif;
 
   --color-paper: #faf7f2;
+  --color-card: #ffffff;
   --color-ink: #243430;
   --color-ink-soft: #5c6f68;
   --color-line: #e7e0d4;
@@ -67,6 +68,54 @@
   }
 }
 
+/* ── themes: token overrides only; components never change ─────────────── */
+[data-theme='light'] {
+  --color-paper: #fafafa;
+  --color-line: #e4e4e7;
+  --color-ink: #1b2421;
+  --color-ink-soft: #6b7280;
+  --color-brand-50: #f1f7f3;
+}
+
+[data-theme='dark'] {
+  --color-paper: #121815;
+  --color-card: #1d2724;
+  --color-ink: #e6efe9;
+  --color-ink-soft: #9fb3aa;
+  --color-line: #2c3a35;
+
+  --color-brand-50: #1d2a24;
+  --color-brand-100: #23362c;
+  --color-brand-200: #2f4a3b;
+  --color-brand-700: #3f8f63;
+  --color-brand-800: #2f7350;
+  --color-brand-900: #16201b;
+
+  --color-copper-100: #32271d;
+  --color-copper-300: #8a5e3e;
+  --color-copper-500: #c0784a;
+  --color-copper-600: #d08c5f;
+  --color-copper-700: #dfae8a;
+
+  --color-danger-500: #d96a52;
+  --color-danger-600: #e08570;
+  --color-amber-flag: #d9a843;
+
+  /* tailwind palette shades we lean on for tints */
+  --color-stone-50: #283430;
+  --color-stone-100: #232e29;
+  --color-stone-200: #2c3a34;
+  --color-red-50: #2c1f1b;
+  --color-red-200: #5a3a32;
+  --color-red-300: #7a4a3e;
+  --color-amber-50: #2c2719;
+  --color-amber-200: #5a4d2a;
+}
+
+[data-theme='dark'] .card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
 @layer components {
   .btn,
   .btn-primary,
@@ -92,10 +141,10 @@
     @apply bg-transparent text-danger-600 hover:bg-red-50 border border-line;
   }
   .card {
-    @apply bg-white rounded-(--radius-card) border border-line shadow-[0_1px_3px_rgba(36,52,48,0.06)];
+    @apply bg-card rounded-(--radius-card) border border-line shadow-[0_1px_3px_rgba(36,52,48,0.06)];
   }
   .input {
-    @apply w-full rounded-xl border border-line bg-white px-4 py-3 text-ink
+    @apply w-full rounded-xl border border-line bg-card px-4 py-3 text-ink
       placeholder:text-ink-soft/60 transition-colors
       focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100;
   }
@@ -103,7 +152,7 @@
     @apply block text-sm font-semibold text-ink mb-1.5;
   }
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-white
+    @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-card
       px-4 py-2 text-sm font-medium text-ink-soft cursor-pointer transition-all
       hover:border-brand-400 hover:text-brand-700 hover:bg-brand-50 active:scale-[0.97];
   }

@@ -4,6 +4,7 @@ import { BellRing, CheckCircle2, FileScan, MessageCircle, MoonStar, ShieldCheck,
 import { api } from '../lib/api'
 import { useAuth, type User } from '../lib/auth'
 import { Spinner, Wordmark } from '../components/ui'
+import { ThemeSwitch } from '../components/ThemeSwitch'
 
 const FEATURES = [
   {
@@ -64,6 +65,7 @@ export default function Landing() {
       <header className="max-w-6xl mx-auto flex items-center justify-between px-6 py-5">
         <Wordmark />
         <nav className="flex items-center gap-2">
+          <ThemeSwitch />
           <Link to="/login" className="btn-ghost text-sm">Sign in</Link>
           <Link to="/signup" className="btn-primary text-sm">Create account</Link>
         </nav>
@@ -89,7 +91,7 @@ export default function Landing() {
         </div>
         <p className="text-xs text-ink-soft/70 mt-3">The demo opens a sample design studio with real, live data. Poke anything.</p>
 
-        <div className="mt-12 rounded-2xl border border-line shadow-[0_24px_60px_-24px_rgba(36,52,48,0.35)] overflow-hidden bg-white max-w-5xl mx-auto">
+        <div className="mt-12 rounded-2xl border border-line shadow-[0_24px_60px_-24px_rgba(36,52,48,0.35)] overflow-hidden bg-card max-w-5xl mx-auto">
           <div className="flex items-center gap-1.5 bg-stone-100 px-4 py-2.5 border-b border-line">
             <span className="h-2.5 w-2.5 rounded-full bg-red-300" />
             <span className="h-2.5 w-2.5 rounded-full bg-amber-200" />

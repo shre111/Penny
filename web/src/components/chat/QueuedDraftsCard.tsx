@@ -94,7 +94,7 @@ export function QueuedDraftsCard({ drafts, onHandled }: { drafts: EmailRecord[];
                     {editing === d._id ? 'Send edited' : 'Send'}
                   </button>
                   <button
-                    className="rounded-full px-3 py-1 text-xs font-semibold bg-white border border-line text-ink-soft hover:bg-stone-50 cursor-pointer"
+                    className="rounded-full px-3 py-1 text-xs font-semibold bg-card border border-line text-ink-soft hover:bg-stone-50 cursor-pointer"
                     onClick={() => setEditing(editing === d._id ? null : d._id)}
                     disabled={busy !== null}
                   >
@@ -102,7 +102,7 @@ export function QueuedDraftsCard({ drafts, onHandled }: { drafts: EmailRecord[];
                     {editing === d._id ? 'Preview' : 'Edit first'}
                   </button>
                   <button
-                    className="rounded-full px-3 py-1 text-xs font-semibold bg-white border border-line text-ink-soft hover:bg-stone-50 cursor-pointer"
+                    className="rounded-full px-3 py-1 text-xs font-semibold bg-card border border-line text-ink-soft hover:bg-stone-50 cursor-pointer"
                     onClick={() => act(d, 'dismiss')}
                     disabled={busy !== null}
                   >

@@ -1,28 +1,70 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { LayoutDashboard, LogOut, MessageCircle } from 'lucide-react'
 import { useAuth } from '../lib/auth'
 import { onAskPenny } from '../lib/askPenny'
 import { Wordmark } from '../components/ui'
+import { ThemeSwitch } from '../components/ThemeSwitch'
 import { Dashboard } from '../components/dashboard/Dashboard'
 import { ChatPanel } from '../components/chat/ChatPanel'
+
+const CHAT_WIDTH_KEY = 'penny:chatWidth'
+const CHAT_WIDTH_DEFAULT = 440
+const CHAT_WIDTH_MIN = 340
+const chatWidthMax = () => Math.min(820, Math.round(window.innerWidth * 0.6))
 
 /**
  * The whole point of Penny, in one screen: your business on the left,
  * your assistant on the right — and the left side moves when she works.
- * On small screens the two become tabs.
+ * The divider drags (double-click resets); on small screens the two become tabs.
  */
 export default function AppShell() {
   const { user, logout } = useAuth()
   const [mobileView, setMobileView] = useState<'dashboard' | 'chat'>('chat')
+  const [chatWidth, setChatWidth] = useState(() => {
+    const saved = Number(localStorage.getItem(CHAT_WIDTH_KEY))
+    return saved >= CHAT_WIDTH_MIN ? saved : CHAT_WIDTH_DEFAULT
+  })
+  const [dragging, setDragging] = useState(false)
+  const widthRef = useRef(chatWidth)
+  widthRef.current = chatWidth
 
   // a dashboard "Ask Penny" tap should reveal the chat on small screens
   useEffect(() => onAskPenny(() => setMobileView('chat')), [])
 
+  const startDrag = useCallback((e: React.PointerEvent) => {
+    e.preventDefault()
+    setDragging(true)
+    const startX = e.clientX
+    const startW = widthRef.current
+    document.body.style.userSelect = 'none'
+    document.body.style.cursor = 'col-resize'
+
+    const onMove = (ev: PointerEvent) => {
+      const next = Math.min(chatWidthMax(), Math.max(CHAT_WIDTH_MIN, startW + (startX - ev.clientX)))
+      setChatWidth(next)
+    }
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove)
+      document.body.style.userSelect = ''
+      document.body.style.cursor = ''
+      setDragging(false)
+      localStorage.setItem(CHAT_WIDTH_KEY, String(widthRef.current))
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp, { once: true })
+  }, [])
+
+  const resetWidth = () => {
+    setChatWidth(CHAT_WIDTH_DEFAULT)
+    localStorage.setItem(CHAT_WIDTH_KEY, String(CHAT_WIDTH_DEFAULT))
+  }
+
   return (
     <div className="h-screen flex flex-col">
-      <header className="flex items-center justify-between px-4 sm:px-6 py-2.5 bg-white border-b border-line shrink-0">
+      <header className="flex items-center justify-between px-4 sm:px-6 py-2.5 bg-card border-b border-line shrink-0">
         <Wordmark size="text-xl" />
         <div className="flex items-center gap-3">
+          <ThemeSwitch />
           <div className="text-right hidden sm:block">
             <p className="text-sm font-semibold leading-tight">{user?.businessName || user?.name}</p>
             <p className="text-[11px] text-ink-soft">{user?.email}</p>
@@ -47,16 +89,28 @@ export default function AppShell() {
         >
           <Dashboard />
         </main>
-        {/* chat */}
+        {/* chat — fixed width on desktop, draggable via the divider */}
         <aside
-          className={`w-full lg:w-105 xl:w-120 shrink-0 min-h-0 ${mobileView === 'chat' ? 'block' : 'hidden'} lg:block`}
+          className={`relative w-full shrink-0 min-h-0 lg:w-(--chat-w) ${mobileView === 'chat' ? 'block' : 'hidden'} lg:block`}
+          style={{ '--chat-w': `${chatWidth}px` } as React.CSSProperties}
         >
+          <div
+            className={`hidden lg:block absolute inset-y-0 -left-1 w-2 z-20 cursor-col-resize group ${dragging ? 'bg-brand-400/40' : ''}`}
+            onPointerDown={startDrag}
+            onDoubleClick={resetWidth}
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize chat panel (drag, double-click to reset)"
+            title="Drag to resize · double-click to reset"
+          >
+            <span className="absolute inset-y-0 left-1 w-px bg-transparent group-hover:bg-brand-400 transition-colors" />
+          </div>
           <ChatPanel />
         </aside>
       </div>
 
       {/* mobile tab bar */}
-      <nav className="lg:hidden flex border-t border-line bg-white shrink-0" aria-label="Switch view">
+      <nav className="lg:hidden flex border-t border-line bg-card shrink-0" aria-label="Switch view">
         <button
           className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold cursor-pointer ${mobileView === 'dashboard' ? 'text-brand-700' : 'text-ink-soft'}`}
           onClick={() => setMobileView('dashboard')}

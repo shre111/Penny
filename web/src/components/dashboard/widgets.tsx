@@ -2,6 +2,16 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { Banknote, AlertCircle, PiggyBank, Users } from 'lucide-react'
 import type { Summary } from '../../lib/types'
 import { fmtMoney } from '../../lib/format'
+import { useChartColors } from '../../lib/theme'
+
+export function useTooltipStyle() {
+  const c = useChartColors()
+  return {
+    contentStyle: { background: c.tooltipBg, border: `1px solid ${c.tooltipBorder}`, borderRadius: 10, color: c.tooltipText },
+    labelStyle: { color: c.tooltipText, fontWeight: 600 },
+    itemStyle: { color: c.tooltipText },
+  }
+}
 
 export function KpiCards({ summary }: { summary: Summary }) {
   const cards = [
@@ -53,6 +63,8 @@ const AGING_COLORS = ['#3a8c61', '#b88323', '#c2543e', '#82492a']
 
 export function AgingChart({ data }: { data: { name: string; value: number }[] }) {
   const empty = data.every((d) => d.value === 0)
+  const c = useChartColors()
+  const tooltip = useTooltipStyle()
   return (
     <div className="card p-4">
       <h3 className="font-semibold mb-1">Unpaid invoices, by lateness</h3>
@@ -62,10 +74,10 @@ export function AgingChart({ data }: { data: { name: string; value: number }[] }
       ) : (
         <ResponsiveContainer width="100%" height={210}>
           <BarChart data={data} margin={{ top: 4, right: 8, left: 8, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e7e0d4" vertical={false} />
-            <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#5c6f68' }} axisLine={false} tickLine={false} interval={0} />
-            <YAxis tickFormatter={(v) => `$${v >= 1000 ? `${v / 1000}k` : v}`} tick={{ fontSize: 11, fill: '#5c6f68' }} axisLine={false} tickLine={false} width={44} />
-            <Tooltip formatter={(v) => fmtMoney(Number(v))} cursor={{ fill: 'rgba(58,140,97,0.06)' }} />
+            <CartesianGrid strokeDasharray="3 3" stroke={c.grid} vertical={false} />
+            <XAxis dataKey="name" tick={{ fontSize: 11, fill: c.tick }} axisLine={false} tickLine={false} interval={0} />
+            <YAxis tickFormatter={(v) => `$${v >= 1000 ? `${v / 1000}k` : v}`} tick={{ fontSize: 11, fill: c.tick }} axisLine={false} tickLine={false} width={44} />
+            <Tooltip formatter={(v) => fmtMoney(Number(v))} cursor={{ fill: 'rgba(58,140,97,0.06)' }} {...tooltip} />
             <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={56}>
               {data.map((_, i) => (
                 <Cell key={i} fill={AGING_COLORS[i % AGING_COLORS.length]} />
@@ -79,16 +91,18 @@ export function AgingChart({ data }: { data: { name: string; value: number }[] }
 }
 
 export function CashflowChart({ data }: { data: { name: string; billed: number; collected: number }[] }) {
+  const c = useChartColors()
+  const tooltip = useTooltipStyle()
   return (
     <div className="card p-4">
       <h3 className="font-semibold mb-1">Billed vs collected</h3>
       <p className="text-xs text-ink-soft mb-3">The last six months at a glance</p>
       <ResponsiveContainer width="100%" height={210}>
         <BarChart data={data} margin={{ top: 4, right: 8, left: 8, bottom: 0 }} barGap={3}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e7e0d4" vertical={false} />
-          <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#5c6f68' }} axisLine={false} tickLine={false} />
-          <YAxis tickFormatter={(v) => `$${v >= 1000 ? `${v / 1000}k` : v}`} tick={{ fontSize: 11, fill: '#5c6f68' }} axisLine={false} tickLine={false} width={44} />
-          <Tooltip formatter={(v) => fmtMoney(Number(v))} cursor={{ fill: 'rgba(58,140,97,0.06)' }} />
+          <CartesianGrid strokeDasharray="3 3" stroke={c.grid} vertical={false} />
+          <XAxis dataKey="name" tick={{ fontSize: 11, fill: c.tick }} axisLine={false} tickLine={false} />
+          <YAxis tickFormatter={(v) => `$${v >= 1000 ? `${v / 1000}k` : v}`} tick={{ fontSize: 11, fill: c.tick }} axisLine={false} tickLine={false} width={44} />
+          <Tooltip formatter={(v) => fmtMoney(Number(v))} cursor={{ fill: 'rgba(58,140,97,0.06)' }} {...tooltip} />
           <Legend wrapperStyle={{ fontSize: 12 }} />
           <Bar dataKey="billed" name="Billed" fill="#bcdfc9" radius={[5, 5, 0, 0]} maxBarSize={26} />
           <Bar dataKey="collected" name="Collected" fill="#2a7350" radius={[5, 5, 0, 0]} maxBarSize={26} />

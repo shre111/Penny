@@ -5,20 +5,24 @@ import type { InterruptAction } from '../../lib/types'
 import { fmtMoney } from '../../lib/format'
 import { api } from '../../lib/api'
 import { Spinner } from '../ui'
+import { useChartColors } from '../../lib/theme'
+import { useTooltipStyle } from '../dashboard/widgets'
 
 const AGING_COLORS = ['#3a8c61', '#b88323', '#c2543e', '#82492a']
 
 /** Charts the agent asked to show (make_chart tool result). */
 export function ChartCard({ data }: { data: { kind: string; title: string; data: any[] } }) {
+  const c = useChartColors()
+  const tooltip = useTooltipStyle()
   return (
     <div className="card p-4 mt-2 animate-pop-in">
       <h4 className="font-semibold text-sm mb-3">{data.title}</h4>
       <ResponsiveContainer width="100%" height={190}>
         <BarChart data={data.data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e7e0d4" vertical={false} />
-          <XAxis dataKey="name" tick={{ fontSize: 10.5, fill: '#5c6f68' }} axisLine={false} tickLine={false} interval={0} />
-          <YAxis tickFormatter={(v) => `$${v >= 1000 ? `${v / 1000}k` : v}`} tick={{ fontSize: 10.5, fill: '#5c6f68' }} axisLine={false} tickLine={false} width={42} />
-          <Tooltip formatter={(v) => fmtMoney(Number(v))} />
+          <CartesianGrid strokeDasharray="3 3" stroke={c.grid} vertical={false} />
+          <XAxis dataKey="name" tick={{ fontSize: 10.5, fill: c.tick }} axisLine={false} tickLine={false} interval={0} />
+          <YAxis tickFormatter={(v) => `$${v >= 1000 ? `${v / 1000}k` : v}`} tick={{ fontSize: 10.5, fill: c.tick }} axisLine={false} tickLine={false} width={42} />
+          <Tooltip formatter={(v) => fmtMoney(Number(v))} {...tooltip} />
           {data.kind === 'cashflow' ? (
             <>
               <Legend wrapperStyle={{ fontSize: 11 }} />
@@ -183,7 +187,7 @@ export function ApprovalCard({
         ))}
       </div>
       {!resolved && (
-        <div className="px-4 py-3 bg-white/60 border-t border-line/70">
+        <div className="px-4 py-3 bg-card/60 border-t border-line/70">
           <button className="btn-copper w-full text-sm" onClick={submit} disabled={submitting || editing !== null}>
             {submitting ? <Spinner /> : approvedCount === 0 ? 'Don’t send anything' : `Confirm (${approvedCount} of ${actions.length} will send)`}
           </button>

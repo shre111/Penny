@@ -58,7 +58,7 @@ export function Dashboard() {
               key={t.key}
               onClick={() => setTab(t.key)}
               className={`relative rounded-full px-4 py-1.5 text-sm font-semibold transition-colors cursor-pointer ${
-                tab === t.key ? 'bg-white text-ink shadow-sm' : 'text-ink-soft hover:text-ink'
+                tab === t.key ? 'bg-card text-ink shadow-sm' : 'text-ink-soft hover:text-ink'
               }`}
             >
               {t.label}
