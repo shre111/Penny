@@ -1,0 +1,51 @@
+# Render blueprint: two services + MongoDB Atlas (external, free tier).
+# 1. Create a free Atlas cluster and put its URI in both services' MONGODB_URI.
+# 2. New > Blueprint in the Render dashboard, point at this repo.
+# 3. Fill the env vars marked sync:false in the dashboard.
+services:
+  - type: web
+    name: penny-app
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false # mongodb+srv://… from Atlas
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SERVICE_TOKEN
+        generateValue: true # paste the same value into penny-ai
+      - key: AI_URL
+        value: https://penny-ai.onrender.com # update if Render assigns a different name
+      - key: GOOGLE_CLIENT_ID
+        sync: false # optional: Google OAuth sign-in
+
+  - type: web
+    name: penny-ai
+    runtime: python
+    plan: free
+    rootDir: ai
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.3
+      - key: MONGODB_URI
+        sync: false # same Atlas URI (checkpoints live in db penny_agent)
+      - key: SERVICE_TOKEN
+        sync: false # must equal penny-app's SERVICE_TOKEN
+      - key: NODE_API_URL
+        value: https://penny-app.onrender.com
+      - key: PENNY_MODEL
+        value: google_genai:gemini-3-flash-preview
+      - key: GOOGLE_API_KEY
+        sync: false # free at https://aistudio.google.com
+      - key: COMPOSIO_API_KEY
+        sync: false # optional: real Gmail sending
+      - key: COMPOSIO_USER_ID
+        value: default

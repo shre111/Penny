@@ -122,6 +122,8 @@ def stream_agent_sse(agent, agent_input, thread_id: str) -> Iterator[str]:
     MongoDB checkpointer so there are no async-saver edge cases."""
     config = {"configurable": {"thread_id": thread_id}}
     interrupted = False
+    last_chunk_id = None
+    emitted_text = False
     # Which subagent is currently working (for labeling nested events). With
     # one subagent active at a time this is exact; with parallel subagents the
     # badge may occasionally attribute to the most recent — cosmetic only.
@@ -150,6 +152,12 @@ def stream_agent_sse(agent, agent_input, thread_id: str) -> Iterator[str]:
                     continue
                 text = _chunk_text(getattr(chunk, "content", ""))
                 if text:
+                    # paragraph break between separate model messages (e.g. before/after tools)
+                    chunk_id = getattr(chunk, "id", None)
+                    if emitted_text and chunk_id != last_chunk_id:
+                        yield sse("token", {"text": "\n\n"})
+                    last_chunk_id = chunk_id
+                    emitted_text = True
                     yield sse("token", {"text": text})
 
             elif mode == "updates":

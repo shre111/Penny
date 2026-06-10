@@ -12,4 +12,14 @@ export default defineConfig({
       '/socket.io': { target: 'http://localhost:4000', ws: true },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes('node_modules/recharts') || id.includes('node_modules/d3-')) return 'charts'
+          if (/node_modules\/(react-markdown|remark-|mdast|micromark|unist|unified|vfile|hast)/.test(id)) return 'markdown'
+        },
+      },
+    },
+  },
 })

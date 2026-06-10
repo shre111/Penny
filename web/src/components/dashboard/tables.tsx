@@ -19,11 +19,22 @@ const SOURCE_BADGE: Record<string, { label: string; icon: React.ReactNode }> = {
 
 export function InvoiceTable({ invoices, highlights }: { invoices: Invoice[]; highlights: Set<string> }) {
   const [filter, setFilter] = useState<'all' | 'overdue' | 'open' | 'paid' | 'draft'>('all')
-  const filtered = invoices.filter((i) => {
-    if (filter === 'all') return true
-    if (filter === 'open') return i.effectiveStatus === 'sent'
-    return i.effectiveStatus === filter
-  })
+  // urgency first: overdue (latest first), then awaiting by due date, drafts, then paid history
+  const URGENCY: Record<string, number> = { overdue: 0, sent: 1, draft: 2, void: 3, paid: 4 }
+  const filtered = invoices
+    .filter((i) => {
+      if (filter === 'all') return true
+      if (filter === 'open') return i.effectiveStatus === 'sent'
+      return i.effectiveStatus === filter
+    })
+    .sort((a, b) => {
+      const ua = URGENCY[a.effectiveStatus] ?? 9
+      const ub = URGENCY[b.effectiveStatus] ?? 9
+      if (ua !== ub) return ua - ub
+      if (a.effectiveStatus === 'overdue') return (b.daysOverdue ?? 0) - (a.daysOverdue ?? 0)
+      if (a.effectiveStatus === 'paid') return new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+    })
   const filters: { key: typeof filter; label: string }[] = [
     { key: 'all', label: 'All' },
     { key: 'overdue', label: 'Overdue' },
@@ -165,7 +176,7 @@ export function Outbox({ emails, highlights }: { emails: EmailRecord[]; highligh
                     <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
                       e.status === 'sent' ? 'bg-brand-100 text-brand-800' : e.status === 'failed' ? 'bg-red-50 text-danger-600' : 'bg-stone-100 text-ink-soft'
                     }`}>
-                      {e.status === 'sent' ? 'Sent via Gmail' : e.status === 'failed' ? 'Failed' : 'Saved (sending off)'}
+                      {e.status === 'sent' ? 'Sent via Gmail' : e.status === 'failed' ? 'Failed' : 'Saved (not sent)'}
                     </span>
                     <ChevronDown className={`h-4 w-4 text-ink-soft transition-transform ${open === e._id ? 'rotate-180' : ''}`} />
                   </div>
