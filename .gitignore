@@ -19,6 +19,10 @@ api/public/
 # the original brief contains a shared API key — keep it out of the public repo
 requirement.txt
 
+# local-only prep notes and credentials — never publish
+docs/DEMO.md
+client_secret*.json
+
 # local dev data
 .data/
 *.log

@@ -109,7 +109,7 @@ Open http://localhost:5173 — sign in with the demo account, or sign up and cli
 
 ## Decisions worth explaining
 
-The short version — the full decision log with context and trade-offs is in [DECISIONS.md](DECISIONS.md). What's next lives in [ROADMAP.md](ROADMAP.md); the demo script and submission checklist in [docs/DEMO.md](docs/DEMO.md); the full deploy runbook in [docs/DEPLOY.md](docs/DEPLOY.md); AI-assisted-development house rules in [CLAUDE.md](CLAUDE.md).
+The short version — the full decision log with context and trade-offs is in [DECISIONS.md](DECISIONS.md). What's next lives in [ROADMAP.md](ROADMAP.md); the full deploy runbook in [docs/DEPLOY.md](docs/DEPLOY.md); AI-assisted-development house rules in [CLAUDE.md](CLAUDE.md).
 
 | Decision | Why |
 |---|---|

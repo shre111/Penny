@@ -1,6 +1,6 @@
 # CLAUDE.md — working on Penny
 
-Penny = AI back office for small businesses: chat agent (LangGraph multi-agent) + live dashboard (invoices/clients/cash-flow) that the agent controls. M32 take-home project. Read [ROADMAP.md](ROADMAP.md) for what to build next, [DECISIONS.md](DECISIONS.md) before changing architecture, [docs/DEMO.md](docs/DEMO.md) for the demo/submission playbook.
+Penny = AI back office for small businesses: chat agent (LangGraph multi-agent) + live dashboard (invoices/clients/cash-flow) that the agent controls. M32 take-home project. Read [ROADMAP.md](ROADMAP.md) for what to build next, [DECISIONS.md](DECISIONS.md) before changing architecture.
 
 ## Run
 

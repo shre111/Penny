@@ -31,7 +31,7 @@ Goal: go past the basics before the M32 deadline (~June 12, 2026). Ranked by imp
 
 ## Always last
 
-- [ ] **Demo video + submission** — script and checklist in [docs/DEMO.md](docs/DEMO.md). Email clarissa@m32.ai + the form, with the deployed URL and the (key-scrubbed) GitHub link.
+- [ ] **Demo video + submission** — record against the deployed URL, then email clarissa@m32.ai + the form, with the deployed URL and the (key-scrubbed) GitHub link.
 
 ## Done so far
 
