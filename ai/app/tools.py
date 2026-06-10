@@ -206,16 +206,17 @@ def build_tools(user_id: str) -> list:
         request(user_id, "POST", "/api/memories", json={"fact": fact})
         return json.dumps({"saved": fact})
 
-    return [
-        list_invoices,
-        create_invoice,
-        record_payment,
-        update_invoice,
-        list_clients,
-        create_client,
-        update_client,
-        get_business_metrics,
-        make_chart,
-        send_email,
-        save_memory,
-    ]
+    return {
+        "bookkeeping": [
+            list_invoices,
+            create_invoice,
+            record_payment,
+            update_invoice,
+            list_clients,
+            create_client,
+            update_client,
+        ],
+        "analyst": [get_business_metrics, make_chart],
+        "outreach": [send_email],
+        "memory": [save_memory],
+    }
