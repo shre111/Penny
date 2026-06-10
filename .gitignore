@@ -1,0 +1,26 @@
+# deps
+node_modules/
+**/node_modules/
+ai/.venv/
+__pycache__/
+*.pyc
+
+# builds
+web/dist/
+api/public/
+
+# env & secrets — never commit
+.env
+.env.*
+!.env.example
+**/.env
+!**/.env.example
+
+# the original brief contains a shared API key — keep it out of the public repo
+requirement.txt
+
+# local dev data
+.data/
+*.log
+.DS_Store
+uploads/

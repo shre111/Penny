@@ -1,0 +1,20 @@
+{
+  "name": "penny",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Penny — an AI back office for small businesses (M32 take-home)",
+  "workspaces": [
+    "web",
+    "api"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,ai,web -c blue,magenta,green \"npm run dev -w api\" \"npm run dev:ai\" \"npm run dev -w web\"",
+    "dev:ai": "cd ai && .venv/bin/uvicorn app.main:app --reload --port 8000",
+    "build": "npm run build -w web",
+    "seed": "npm run seed -w api",
+    "start": "npm start -w api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
