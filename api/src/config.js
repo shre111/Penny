@@ -17,7 +17,7 @@ const required = (name, fallback) => {
 }
 
 export const config = {
-  port: Number(process.env.PORT || 4000),
+  port: Number(process.env.PORT || 4001),
   mongoUri: required('MONGODB_URI', 'mongodb://127.0.0.1:27017/penny'),
   jwtSecret: required('JWT_SECRET', 'dev-only-secret-change-me'),
   aiUrl: process.env.AI_URL || 'http://localhost:8000',

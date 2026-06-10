@@ -92,7 +92,7 @@ npm install
 python3 -m venv ai/.venv && ai/.venv/bin/pip install -r ai/requirements.txt
 cp .env.example .env                  # defaults work; add a GOOGLE_API_KEY for the real model
 npm run seed                          # demo account: demo@penny.app / demo1234
-npm run dev                           # api :4000 · ai :8400 · web :5173
+npm run dev                           # api :4001 · ai :8400 · web :5173
 ```
 
 Open http://localhost:5173 — sign in with the demo account, or sign up and click **Load sample business**.
@@ -108,6 +108,8 @@ Open http://localhost:5173 — sign in with the demo account, or sign up and cli
 4. Free instances sleep after 15 idle minutes — first hit takes ~1 min to wake. Keep-alive pings (UptimeRobot) help during review windows.
 
 ## Decisions worth explaining
+
+The short version — the full decision log with context and trade-offs is in [DECISIONS.md](DECISIONS.md). What's next lives in [ROADMAP.md](ROADMAP.md); the demo script and submission checklist in [docs/DEMO.md](docs/DEMO.md); AI-assisted-development house rules in [CLAUDE.md](CLAUDE.md).
 
 | Decision | Why |
 |---|---|

@@ -7,7 +7,7 @@ _here = Path(__file__).resolve().parent.parent
 load_dotenv(_here / ".env")
 load_dotenv(_here.parent / ".env")
 
-NODE_API_URL = os.getenv("NODE_API_URL", "http://localhost:4000")
+NODE_API_URL = os.getenv("NODE_API_URL", "http://localhost:4001")
 SERVICE_TOKEN = os.getenv("SERVICE_TOKEN", "dev-service-token")
 MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://127.0.0.1:27017/penny")
 
