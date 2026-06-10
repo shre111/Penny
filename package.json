@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "dev": "concurrently -n api,ai,web -c blue,magenta,green \"npm run dev -w api\" \"npm run dev:ai\" \"npm run dev -w web\"",
-    "dev:ai": "cd ai && .venv/bin/uvicorn app.main:app --reload --port 8000",
+    "dev:ai": "cd ai && .venv/bin/uvicorn app.main:app --reload --port 8400",
     "build": "npm run build -w web",
     "seed": "npm run seed -w api",
     "start": "npm start -w api"

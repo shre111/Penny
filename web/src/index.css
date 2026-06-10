@@ -68,7 +68,11 @@
 }
 
 @layer components {
-  .btn {
+  .btn,
+  .btn-primary,
+  .btn-copper,
+  .btn-ghost,
+  .btn-danger-ghost {
     @apply inline-flex items-center justify-center gap-2 rounded-full font-semibold
       transition-all duration-150 cursor-pointer select-none
       disabled:opacity-50 disabled:cursor-not-allowed
@@ -76,16 +80,16 @@
       px-5 py-2.5 text-[0.95rem];
   }
   .btn-primary {
-    @apply btn bg-brand-700 text-white hover:bg-brand-800 active:scale-[0.98] shadow-sm;
+    @apply bg-brand-700 text-white hover:bg-brand-800 active:scale-[0.98] shadow-sm;
   }
   .btn-copper {
-    @apply btn bg-copper-500 text-white hover:bg-copper-600 active:scale-[0.98] shadow-sm;
+    @apply bg-copper-500 text-white hover:bg-copper-600 active:scale-[0.98] shadow-sm;
   }
   .btn-ghost {
-    @apply btn bg-transparent text-ink hover:bg-brand-50 border border-line;
+    @apply bg-transparent text-ink hover:bg-brand-50 border border-line;
   }
   .btn-danger-ghost {
-    @apply btn bg-transparent text-danger-600 hover:bg-red-50 border border-line;
+    @apply bg-transparent text-danger-600 hover:bg-red-50 border border-line;
   }
   .card {
     @apply bg-white rounded-(--radius-card) border border-line shadow-[0_1px_3px_rgba(36,52,48,0.06)];
