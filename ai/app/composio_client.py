@@ -7,6 +7,7 @@ outbox as 'simulated' — the product flow stays fully demoable either way.
 from . import config
 
 _composio = None
+_gmail_version = None
 
 
 def _get_composio():
@@ -16,6 +17,17 @@ def _get_composio():
 
         _composio = Composio(api_key=config.COMPOSIO_API_KEY)
     return _composio
+
+
+def _resolve_gmail_version(composio) -> str | None:
+    """Manual tools.execute() requires a pinned toolkit version ('latest' is
+    rejected) — resolve the current one from the API once and cache it."""
+    global _gmail_version
+    if _gmail_version is None:
+        raw = composio.tools.get_raw_composio_tool_by_slug("GMAIL_SEND_EMAIL")
+        data = raw.model_dump() if hasattr(raw, "model_dump") else vars(raw)
+        _gmail_version = str(data.get("version") or (data.get("available_versions") or [None])[0] or "")
+    return _gmail_version or None
 
 
 def send_gmail(to: str, subject: str, body: str) -> tuple[str, str | None]:
@@ -28,6 +40,7 @@ def send_gmail(to: str, subject: str, body: str) -> tuple[str, str | None]:
             "GMAIL_SEND_EMAIL",
             user_id=config.COMPOSIO_USER_ID,
             arguments={"recipient_email": to, "subject": subject, "body": body},
+            version=_resolve_gmail_version(composio),
         )
         if isinstance(result, dict) and result.get("successful") is False:
             return "failed", str(result.get("error", "unknown Composio error"))[:300]

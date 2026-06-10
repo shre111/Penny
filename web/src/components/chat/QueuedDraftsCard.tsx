@@ -13,18 +13,21 @@ export function QueuedDraftsCard({ drafts, onHandled }: { drafts: EmailRecord[];
   const [edits, setEdits] = useState<Record<string, { subject: string; body: string }>>({})
   const [busy, setBusy] = useState<string | null>(null)
   const [done, setDone] = useState<Record<string, string>>({}) // id -> 'sent' | 'skipped'
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   const fieldsFor = (d: EmailRecord) => edits[d._id] ?? { subject: d.subject, body: d.body }
 
   const act = async (d: EmailRecord, action: 'approve' | 'dismiss') => {
     setBusy(d._id)
+    setErrors((prev) => ({ ...prev, [d._id]: '' }))
     try {
       const payload = action === 'approve' ? { json: fieldsFor(d) } : {}
       const res = await api<{ email: EmailRecord }>(`/api/emails/${d._id}/${action}`, { method: 'POST', ...payload })
       setDone((prev) => ({ ...prev, [d._id]: action === 'approve' ? res.email.status : 'skipped' }))
       onHandled()
-    } catch {
-      /* card stays; user can retry */
+    } catch (err: any) {
+      // card stays actionable; show why so a retry makes sense
+      setErrors((prev) => ({ ...prev, [d._id]: err?.message || 'Something went wrong — try again' }))
     } finally {
       setBusy(null)
       setEditing(null)
@@ -76,6 +79,9 @@ export function QueuedDraftsCard({ drafts, onHandled }: { drafts: EmailRecord[];
                     <pre className="whitespace-pre-wrap font-sans text-[13px] text-ink-soft mt-1 max-h-36 overflow-y-auto">{f.body}</pre>
                   )}
                 </>
+              )}
+              {errors[d._id] && !state && (
+                <p className="text-xs text-danger-600 mt-1.5">{errors[d._id]}</p>
               )}
               {!state && (
                 <div className="flex gap-1.5 mt-2.5">

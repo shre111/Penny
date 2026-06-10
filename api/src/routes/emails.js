@@ -59,7 +59,16 @@ emailsRouter.post('/:id/approve', requireAuth, async (req, res) => {
   } catch {
     /* AI service down → record as simulated rather than losing the approval */
   }
-  email.status = result.status === 'failed' ? 'failed' : result.status
+
+  if (result.status === 'failed') {
+    // keep the draft approvable — a transient send failure shouldn't eat it
+    email.error = result.error || 'send failed'
+    await email.save()
+    emitChange(req.userId, { entity: 'email', action: 'updated', id: email._id, actor: 'user', doc: email })
+    return res.status(502).json({ error: `Couldn't send via Gmail: ${(result.error || '').slice(0, 180)}` })
+  }
+
+  email.status = result.status
   email.provider = result.status === 'sent' ? 'composio-gmail' : 'simulated'
   email.error = result.error || undefined
   await email.save()
