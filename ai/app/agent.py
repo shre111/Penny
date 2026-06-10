@@ -27,7 +27,12 @@ _model = None
 def get_model():
     global _model
     if _model is None:
-        _model = init_chat_model(config.PENNY_MODEL, temperature=0.3)
+        if config.PENNY_MODEL.startswith("scripted"):
+            from .scripted_model import ScriptedModel
+
+            _model = ScriptedModel()
+        else:
+            _model = init_chat_model(config.PENNY_MODEL, temperature=0.3)
     return _model
 
 
