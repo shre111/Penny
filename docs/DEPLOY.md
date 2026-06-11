@@ -11,8 +11,8 @@ Target: a public URL on Render's free tier, per the brief's preference. ~45–60
 
 ```bash
 # from the repo root — verify identity & cleanliness first:
-git log --format='%an <%ae>' | sort -u        # → only Shreya Dantani
-git log -p --all | grep -ciE 'sk-proj-|AIza|AQ\.'   # → 0
+git log --format='%an <%ae>' | sort -u 
+git log -p --all | grep -cE 'sk-proj-[A-Za-z0-9_-]{20,}|AIza[0-9A-Za-z_-]{30,}|AQ\.[A-Za-z0-9_-]{20,}'  # → 0
 git ls-files | grep -E '^\.env$|requirement.txt'    # → nothing
 
 # create a PUBLIC repo on the submitter's GitHub, then:

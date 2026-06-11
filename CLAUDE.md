@@ -29,7 +29,7 @@ npm run build      # builds web/dist (Express serves it in prod = single origin)
 - **SSE protocol** between ai→api→browser is the contract in `streaming.py`'s docstring; api/chat.js parses a copy of the stream to persist the assistant message + interrupt state. Change all three layers together.
 - **UI language:** plain words for a 50-year-old owner ("money owed to you", never "accounts receivable"). Tailwind v4: custom classes live in `index.css` `@layer components`; you cannot `@apply` a custom class inside another (group selectors instead).
 - **Money math** (balance/overdue/daysOverdue) lives in Invoice virtuals only — don't duplicate it.
-- **Secrets:** `.env` and `requirement.txt` are gitignored. `requirement.txt` (the brief) contains a *shared* OpenAI key given to all candidates — never use it, never commit it. Scan before pushing: `git log -p | grep -ciE 'sk-proj-|AIza|AQ\.'` should be 0.
+- **Secrets:** `.env` and `requirement.txt` are gitignored. `requirement.txt` (the brief) contains a *shared* OpenAI key given to all candidates — never use it, never commit it. Scan before pushing: `git log -p --all | grep -cE 'sk-proj-[A-Za-z0-9_-]{20,}|AIza[0-9A-Za-z_-]{30,}|AQ\.[A-Za-z0-9_-]{20,}'` should be 0.
 
 ## Testing patterns that already work
 
