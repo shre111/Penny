@@ -112,6 +112,11 @@ The Express relay forwards bytes untouched (latency) while parsing a copy (persi
 | **Audit + undo** | `emitChange` persists `Activity` rows (skipping bulk reloads); agent-created invoice/client records carry an `undo` descriptor; undo endpoint reverses and marks `undoneAt` |
 | **PDF** | pdfkit, shared renderer for authed + public routes; explicit footer positioning (page-overflow gotcha) |
 | **Spotlight ("Penny's pointer")** | activity events map tool→dashboard region; window-event bus; 2.4s CSS ring animation |
+| **RAG knowledge base** | paste/upload → paragraph-aware chunking (AI service) → Gemini embeddings (hashed-BoW zero-key fallback) → vectors stored in Mongo → `search_knowledge` embeds the query and ranks by exact cosine (SMB corpora are tiny; Atlas $vectorSearch is the scale path) → both personas answer with citations |
+| **Reply ingestion** | Composio GMAIL_FETCH_EMAILS (version-pinned) → sender matched to clients with open invoices → structured-output intent read (keyword fallback) → stated dates become payment promises |
+| **Weekly digest** | Sunday 18:00 cron → metrics+insights+forecast gathered → model-composed (template fallback) → sent to the OWNER via their own Gmail, recorded in outbox |
+| **Invoice drawer** | row click → side panel joining the invoice with its emails, proposals and activity (new invoiceId/entityId query filters) |
+| **PWA + a11y** | manifest + generated icons (installable); skeleton loaders; aria-live streaming region |
 
 ## 6. Data model (Mongo, db `penny`)
 
@@ -150,3 +155,5 @@ The Express relay forwards bytes untouched (latency) while parsing a copy (persi
 - Playwright (system Chrome) visual passes for every UI surface; screenshots reviewed at each milestone.
 - Real-model verification on Gemini: the brief's "David" test, multi-agent routing, vision extraction field-accuracy, overnight drafting tone.
 - Static: eslint (0 errors policy), `tsc -b`, `node --check`, `py_compile`.
+- **`npm test`**: a 26-assertion eval suite driving the running stack end-to-end on the scripted model — auth, tool mutations, HITL interrupt/resume/double-resume, concierge promises + guardrails + proposals, guardian detectors, trust gating. Deterministic, key-free, finishes in ~15s.
+- Observability: set `LANGSMITH_TRACING=true` + `LANGSMITH_API_KEY` and LangChain traces every agent run, tool call and token count automatically.
