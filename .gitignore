@@ -28,3 +28,6 @@ client_secret*.json
 *.log
 .DS_Store
 uploads/
+
+# never ship archives
+*.zip
