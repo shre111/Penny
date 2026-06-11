@@ -79,6 +79,25 @@ authRouter.get('/config', (_req, res) => {
   res.json({ googleClientId: config.googleClientId || null })
 })
 
+// Earned autonomy: flip auto-send on/off — ON requires the trust bar to be met
+authRouter.patch('/autonomy', requireAuth, async (req, res) => {
+  const { trustStats } = await import('../trust.js')
+  const user = await User.findById(req.userId)
+  if (!user) return res.status(401).json({ error: 'Account not found' })
+  const wantOn = Boolean(req.body?.autoSendReminders)
+  if (wantOn) {
+    const stats = await trustStats(req.userId)
+    if (!stats.eligible) {
+      return res.status(409).json({
+        error: `Penny hasn't earned this yet — she needs ${stats.cleanNeeded} untouched approvals in your last ${stats.window || 0} decisions (currently ${stats.clean}, with ${stats.skipped} skipped).`,
+      })
+    }
+  }
+  user.autonomy.autoSendReminders = wantOn
+  await user.save()
+  res.json({ user: user.toSafeJSON() })
+})
+
 // Concierge guardrails: what Penny may agree to with clients on public pages
 authRouter.patch('/concierge', requireAuth, async (req, res) => {
   const user = await User.findById(req.userId)

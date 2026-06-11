@@ -165,10 +165,12 @@ def build_tools(user_id: str) -> list:
         summary = request(user_id, "GET", "/api/metrics/summary")["summary"]
         briefing = request(user_id, "GET", "/api/metrics/briefing")["briefing"]
         forecast = request(user_id, "GET", "/api/metrics/forecast")["forecast"]
+        insights = request(user_id, "GET", "/api/metrics/insights")["insights"]
         return json.dumps(
             {
                 "summary": summary,
                 "this_week": briefing,
+                "things_penny_noticed": [i["message"] for i in insights],
                 "forecast_next_8_weeks": {
                     "total_expected": forecast["totalExpected"],
                     "expected_payments": [
@@ -201,6 +203,53 @@ def build_tools(user_id: str) -> list:
         charts = request(user_id, "GET", "/api/metrics/charts")
         title = "Unpaid invoices by how late they are" if kind == "aging" else "Billed vs collected — last 6 months"
         return json.dumps({"chart": {"kind": kind, "title": title, "data": charts[kind]}})
+
+    @tool
+    def make_rescue_plan() -> str:
+        """Build a concrete, one-tap action plan to bring money in faster: who to chase,
+        broken promises to follow up, forgotten retainers to bill, who could be offered an
+        early-payment nudge. Renders as an executable checklist in the chat."""
+        invoices = request(user_id, "GET", "/api/invoices", params={"status": "overdue", "limit": 20})["invoices"]
+        insights = request(user_id, "GET", "/api/metrics/insights")["insights"]
+        forecast = request(user_id, "GET", "/api/metrics/forecast")["forecast"]
+
+        steps = []
+        chased = set()
+        # broken promises first — those clients already said yes once
+        for ins in insights:
+            if ins["type"] == "broken-promise" and ins.get("invoices"):
+                num = ins["invoices"][0]
+                chased.add(num)
+                steps.append(
+                    {"label": f"Follow up on the broken promise for {num}", "impact": "they already committed once",
+                     "ask": f"Draft a gentle follow-up for invoice {num} — they promised to pay and the date slipped."}
+                )
+        # then the biggest overdue invoices not nudged recently
+        compact = sorted((_compact_invoice(i) for i in invoices), key=lambda x: -(x.get("balance") or 0))
+        for inv in compact[:2]:
+            if inv["number"] in chased or not inv.get("client_email"):
+                continue
+            steps.append(
+                {"label": f"Chase {inv['number']} — {inv['client']} (${(inv.get('balance') or 0):,.0f}, {inv.get('days_overdue', 0)}d late)",
+                 "impact": f"+${(inv.get('balance') or 0):,.0f}",
+                 "ask": f"Draft a payment reminder for invoice {inv['number']}."}
+            )
+        # forgotten recurring work
+        for ins in insights:
+            if ins["type"] == "retainer-gap":
+                steps.append(
+                    {"label": f"Bill the monthly retainer for {ins.get('client')}", "impact": "recurring revenue you forgot",
+                     "ask": f"Log this month's retainer invoice for {ins.get('client')} — same amount as last time."}
+                )
+            elif ins["type"] == "duplicate":
+                steps.append(
+                    {"label": f"Check a possible duplicate: {' & '.join(ins.get('invoices', []))}", "impact": "avoid an awkward client moment",
+                     "ask": f"Tell me about invoices {' and '.join(ins.get('invoices', []))} — are they duplicates? If so, void the newer one."}
+                )
+        total_expected = forecast.get("totalExpected", 0)
+        return json.dumps(
+            {"plan": {"title": "Penny's plan to bring money in", "context": f"${total_expected:,.0f} expected over 8 weeks if nothing changes", "steps": steps[:5]}}
+        )
 
     @tool
     def send_email(to: str, subject: str, body: str, invoice_number: str = "") -> str:
@@ -253,7 +302,7 @@ def build_tools(user_id: str) -> list:
             update_client,
             get_invoice_pdf_link,
         ],
-        "analyst": [get_business_metrics, make_chart],
+        "analyst": [get_business_metrics, make_chart, make_rescue_plan],
         "outreach": [send_email],
         "memory": [save_memory],
     }

@@ -21,6 +21,7 @@ import { publicRouter } from './routes/public.js'
 import { overnightRouter } from './routes/overnight.js'
 import { invoicePdfHandler } from './routes/invoicePdf.js'
 import { requireAuth } from './auth/middleware.js'
+import { trustStats } from './trust.js'
 import { startOvernightSchedule } from './overnight.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -47,6 +48,7 @@ app.use('/api/proposals', proposalsRouter)
 app.use('/api/public', publicRouter)
 app.use('/api/overnight', overnightRouter)
 app.get('/api/invoices/:id/pdf', requireAuth, invoicePdfHandler)
+app.get('/api/trust', requireAuth, async (req, res) => res.json(await trustStats(req.userId)))
 
 // Production: serve the built SPA from the same origin
 const webDist = path.join(__dirname, '..', '..', 'web', 'dist')

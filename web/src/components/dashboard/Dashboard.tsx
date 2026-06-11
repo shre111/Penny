@@ -9,6 +9,7 @@ import { KpiCards, AgingChart, CashflowChart, ForecastCard } from './widgets'
 import { InvoiceTable, ClientsTable, Outbox } from './tables'
 import { ActivityFeed } from './ActivityFeed'
 import { ConciergeSettings } from './ConciergeSettings'
+import { TrustCard } from './TrustCard'
 
 type Tab = 'overview' | 'invoices' | 'clients' | 'outbox' | 'activity'
 
@@ -118,6 +119,7 @@ export function Dashboard() {
       {tab === 'clients' && <ClientsTable clients={clients.data?.clients || []} highlights={clients.highlights} />}
       {tab === 'outbox' && (
         <div className="space-y-4">
+          <TrustCard />
           <ConciergeSettings />
           <Outbox emails={emails.data?.emails || []} highlights={emails.highlights} />
         </div>

@@ -115,7 +115,7 @@ class ScriptedModel(BaseChatModel):
                 "One moment — handing this to the Bookkeeper…",
                 tool_calls=[_tc("ask_bookkeeper", {"request": human})],
             )
-        if any(k in h for k in ("chart", "aging", "late", "month", "cash", "how did", "how are we", "doing", "forecast", "get paid", "coming in", "expect")):
+        if any(k in h for k in ("chart", "aging", "late", "month", "cash", "how did", "how are we", "doing", "forecast", "get paid", "coming in", "expect", "rescue", "plan")):
             return AIMessage(
                 "Let me get the Analyst on this…",
                 tool_calls=[_tc("ask_analyst", {"request": human})],
@@ -186,6 +186,8 @@ class ScriptedModel(BaseChatModel):
 
         if isinstance(last, ToolMessage):
             result = self._tool_result(last)
+            if last.name == "make_rescue_plan":
+                return AIMessage("Here's the plan — each step is one tap. Start at the top.")
             if last.name == "make_chart":
                 chart = result.get("chart", {})
                 return AIMessage(f"Chart's ready — {chart.get('title', 'see the chart in chat')}.")
@@ -198,6 +200,8 @@ class ScriptedModel(BaseChatModel):
                 )
             return AIMessage("Numbers delivered.")
 
+        if "rescue" in h or "plan" in h:
+            return AIMessage("Building your plan…", tool_calls=[_tc("make_rescue_plan", {})])
         if "forecast" in h or "get paid" in h or "coming in" in h or "expect" in h:
             return AIMessage("Charting…", tool_calls=[_tc("make_chart", {"kind": "forecast"})])
         if "aging" in h or "late" in h or "owe" in h:
@@ -245,6 +249,8 @@ class ScriptedModel(BaseChatModel):
             if last.name == "create_invoice":
                 created = result.get("created", {})
                 return AIMessage(f"Logged it — {created.get('number', 'the invoice')} for {created.get('client', 'your client')}, ${(created.get('amount') or 0):,}. You'll see it pop onto your dashboard.")
+            if last.name == "make_rescue_plan":
+                return AIMessage("Here's the plan — each step is one tap. Start at the top.")
             if last.name == "make_chart":
                 return AIMessage("Here's the picture. Anything in there you'd like me to dig into?")
             if last.name == "get_business_metrics":

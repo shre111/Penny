@@ -9,6 +9,15 @@ const userSchema = new mongoose.Schema(
     businessName: { type: String, trim: true, default: '' },
     avatarUrl: { type: String, default: '' },
     isDemo: { type: Boolean, default: false },
+    // earned autonomy: may Penny send routine reminders without asking?
+    // (only unlockable once she's earned it — see api/src/trust.js)
+    autonomy: {
+      type: new mongoose.Schema(
+        { autoSendReminders: { type: Boolean, default: false } },
+        { _id: false }
+      ),
+      default: () => ({}),
+    },
     // guardrails for the client-facing concierge on public invoice pages
     concierge: {
       type: new mongoose.Schema(
@@ -34,6 +43,7 @@ userSchema.methods.toSafeJSON = function () {
     avatarUrl: this.avatarUrl,
     isDemo: this.isDemo,
     hasGoogle: Boolean(this.googleId),
+    autonomy: { autoSendReminders: this.autonomy?.autoSendReminders ?? false },
     concierge: {
       enabled: this.concierge?.enabled ?? true,
       maxExtensionDays: this.concierge?.maxExtensionDays ?? 14,

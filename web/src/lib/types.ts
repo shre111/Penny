@@ -88,10 +88,28 @@ export interface EmailRecord {
   to: string
   subject: string
   body: string
-  status: 'queued' | 'sent' | 'simulated' | 'failed' | 'dismissed'
+  status: 'queued' | 'scheduled' | 'sent' | 'simulated' | 'failed' | 'dismissed'
   provider: string
+  sendAt?: string
   invoiceId?: string
   createdAt: string
+}
+
+export interface Insight {
+  type: 'duplicate' | 'retainer-gap' | 'broken-promise'
+  message: string
+  invoices?: string[]
+  client?: string
+}
+
+export interface TrustStats {
+  window: number
+  clean: number
+  edited: number
+  skipped: number
+  cleanNeeded: number
+  eligible: boolean
+  autoSendReminders: boolean
 }
 
 export interface ChatSession {
@@ -109,7 +127,7 @@ export interface ActivityEvent {
 }
 
 export interface Artifact {
-  type: 'chart' | 'invoices' | 'extraction'
+  type: 'chart' | 'invoices' | 'extraction' | 'plan'
   data: any
 }
 

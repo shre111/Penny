@@ -59,6 +59,10 @@ export async function seedDemoData(userId) {
       items: [{ description: 'Patient welcome kit design', quantity: 1, unitPrice: 2750 }] },
     { client: 'GreenLeaf Landscaping', amount: 1200, issue: -5, due: 25, status: 'sent',
       items: [{ description: 'Spring campaign social kit', quantity: 1, unitPrice: 1200 }] },
+    // deliberately suspicious: same client, same amount, three days apart →
+    // lets "Penny noticed" flag a possible duplicate in the demo
+    { client: 'GreenLeaf Landscaping', amount: 1200, issue: -2, due: 27, status: 'sent',
+      items: [{ description: 'Spring campaign social kit (rebill)', quantity: 1, unitPrice: 1200 }] },
     // a draft sitting in the books
     { client: 'Sunrise Bakery', amount: 880, issue: -2, due: 28, status: 'draft',
       items: [{ description: 'Seasonal packaging concepts', quantity: 1, unitPrice: 880 }] },

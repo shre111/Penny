@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronDown, Headphones, Mic, Paperclip, Plus, SendHorizonal, Square, Trash2, Volume2 } from 'lucide-react'
 import { api } from '../../lib/api'
 import { useAuth } from '../../lib/auth'
-import type { Briefing, ChatSession, EmailRecord, Proposal } from '../../lib/types'
+import type { Briefing, ChatSession, EmailRecord, Insight, Proposal } from '../../lib/types'
 import { fmtMoney } from '../../lib/format'
 import { useChatStream } from '../../hooks/useChatStream'
 import { useLiveData } from '../../hooks/useLiveData'
@@ -56,6 +56,7 @@ export function ChatPanel() {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [showSessions, setShowSessions] = useState(false)
   const [briefing, setBriefing] = useState<Briefing | null>(null)
+  const [insights, setInsights] = useState<Insight[]>([])
   const { messages, streaming, busy, loadingHistory, send, resume, uploadDocument, patchMessageArtifact } =
     useChatStream(sessionId)
   const [input, setInput] = useState('')
@@ -153,6 +154,9 @@ export function ChatPanel() {
     })
     api<{ briefing: Briefing }>('/api/metrics/briefing')
       .then((d) => setBriefing(d.briefing))
+      .catch(() => {})
+    api<{ insights: Insight[] }>('/api/metrics/insights')
+      .then((d) => setInsights(d.insights))
       .catch(() => {})
   }, [])
 
@@ -291,6 +295,14 @@ export function ChatPanel() {
                   <p>I keep your invoices, clients and follow-ups in order — just talk to me like you would to a helpful bookkeeper. You can also drop a photo of an invoice here and I'll log it.</p>
                 )}
               </div>
+              {insights.length > 0 && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50/70 px-3.5 py-2.5 space-y-1">
+                  <p className="text-xs font-bold text-amber-flag">👀 Penny noticed</p>
+                  {insights.map((ins, i) => (
+                    <p key={i} className="text-[13px] leading-snug">{ins.message}</p>
+                  ))}
+                </div>
+              )}
               <div className="flex flex-wrap gap-1.5 items-center">
                 {speak.supported && briefing && (
                   <button
@@ -307,6 +319,11 @@ export function ChatPanel() {
                     {chip}
                   </button>
                 ))}
+                {(insights.length > 0 || (briefing?.overdueCount ?? 0) > 0) && (
+                  <button className="chip border-brand-300 text-brand-700" onClick={() => submit('Build me a rescue plan to bring money in faster')}>
+                    🛟 Build me a rescue plan
+                  </button>
+                )}
               </div>
             </div>
           </div>

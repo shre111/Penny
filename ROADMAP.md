@@ -25,6 +25,9 @@ Goal: go past the basics before the M32 deadline (~June 12, 2026). Ranked by imp
 - [x] **The invoice that talks back (client concierge)** ⭐ — public tokenized invoice pages where YOUR CLIENT chats with Penny: explains charges, hands over the PDF, records payment promises (which feed the forecast as first-party signal), and negotiates extensions/installments WITHIN owner-set guardrails → owner approves/declines in chat → books update. Rate-limited public endpoint; strictly scoped persona.
 - [x] **Hands-free conversation mode** — headphones toggle: Penny answers aloud, then listens for the next request (Web Speech in + out).
 - [x] **Penny's pointer** — the dashboard element she's reading/changing spotlights as she works (tool activity → glow).
+- [x] **Earned autonomy** ⭐ — Penny EARNS auto-send: 5 untouched approvals (zero skips) unlock the toggle; even then every auto-send waits 15 minutes in a cancel window, fired by a minute-cron, fully on the Activity record. Trust bar + governance UI on the Outbox tab.
+- [x] **"Penny noticed" guardian** — duplicate invoices, forgotten retainers, broken promises — explainable heuristics over the owner's own books, surfaced in the briefing and readable by the agent.
+- [x] **Rescue plans** — "Build me a rescue plan" → executable checklist artifact (chase, follow up broken promises, bill forgotten retainers, resolve duplicates), each step one tap into the composer.
 - [ ] **9. CSV import** (~1–2h) — bulk-load clients/invoices; useful for reviewers with their own data.
 - [ ] **10. LangSmith tracing** (~10 min) — env vars only; "how do you debug agents" answer for the interview.
 

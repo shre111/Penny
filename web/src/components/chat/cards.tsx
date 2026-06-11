@@ -1,12 +1,51 @@
 import { useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, Cell } from 'recharts'
-import { Check, Mail, Pencil, X, FileCheck } from 'lucide-react'
+import { Check, ListChecks, Mail, Pencil, Play, X, FileCheck } from 'lucide-react'
 import type { InterruptAction } from '../../lib/types'
 import { fmtMoney } from '../../lib/format'
 import { api } from '../../lib/api'
+import { askPenny } from '../../lib/askPenny'
 import { Spinner } from '../ui'
 import { useChartColors } from '../../lib/theme'
 import { useTooltipStyle } from '../dashboard/widgets'
+
+/** Penny's executable rescue plan — every step is one tap into the composer. */
+export function PlanCard({ data }: { data: { title: string; context?: string; steps: { label: string; impact?: string; ask: string }[] } }) {
+  const [started, setStarted] = useState<Set<number>>(new Set())
+  return (
+    <div className="card mt-2 overflow-hidden animate-pop-in border-2 border-brand-200">
+      <div className="px-4 py-3 border-b border-line/70 bg-brand-50/60">
+        <p className="font-semibold text-sm flex items-center gap-2">
+          <ListChecks className="h-4 w-4 text-brand-700" /> {data.title}
+        </p>
+        {data.context && <p className="text-xs text-ink-soft mt-0.5">{data.context}</p>}
+      </div>
+      <ol className="divide-y divide-line/60">
+        {data.steps.map((s, i) => (
+          <li key={i} className="flex items-center gap-3 px-4 py-2.5">
+            <span className="shrink-0 h-5 w-5 rounded-full bg-brand-100 text-brand-800 text-[11px] font-bold inline-flex items-center justify-center">
+              {i + 1}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className={`text-sm ${started.has(i) ? 'text-ink-soft line-through' : ''}`}>{s.label}</p>
+              {s.impact && <p className="text-[11px] text-copper-600 font-semibold">{s.impact}</p>}
+            </div>
+            <button
+              className="btn-ghost text-xs py-1 px-2.5 shrink-0"
+              onClick={() => {
+                setStarted((prev) => new Set(prev).add(i))
+                askPenny(s.ask)
+              }}
+              disabled={started.has(i)}
+            >
+              <Play className="h-3 w-3" /> {started.has(i) ? 'Queued' : 'Do it'}
+            </button>
+          </li>
+        ))}
+      </ol>
+    </div>
+  )
+}
 
 const AGING_COLORS = ['#3a8c61', '#b88323', '#c2543e', '#82492a']
 

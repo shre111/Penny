@@ -36,6 +36,7 @@ FRIENDLY_RUNNING = {
     "make_chart": "Drawing your chart…",
     "send_email": "Preparing the email…",
     "save_memory": "Noting that down…",
+    "make_rescue_plan": "Building your action plan…",
     "ask_bookkeeper": "Asking the Bookkeeper…",
     "ask_analyst": "Asking the Analyst…",
     "get_invoice_pdf_link": "Preparing the PDF…",
@@ -54,6 +55,7 @@ FRIENDLY_DONE = {
     "make_chart": "Chart ready",
     "send_email": "Email handled",
     "save_memory": "Noted for next time",
+    "make_rescue_plan": "Plan ready",
     "ask_bookkeeper": "Bookkeeper reported back",
     "ask_analyst": "Analyst reported back",
     "get_invoice_pdf_link": "PDF ready",
@@ -221,7 +223,9 @@ def stream_agent_sse(agent, agent_input, thread_id: str) -> Iterator[str]:
                             if msg.tool_call_id in open_subagents:
                                 open_subagents.pop(msg.tool_call_id, None)
                             # rich cards for data-shaped results (works nested too)
-                            if result.get("chart"):
+                            if result.get("plan"):
+                                yield sse("artifact", {"type": "plan", "data": result["plan"]})
+                            elif result.get("chart"):
                                 yield sse("artifact", {"type": "chart", "data": result["chart"]})
                             elif result.get("invoices") and result.get("count", 0) > 0 and msg.name == "list_invoices":
                                 yield sse(

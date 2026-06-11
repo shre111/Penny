@@ -189,6 +189,73 @@ metricsRouter.get('/forecast', async (req, res) => {
   })
 })
 
+/**
+ * The guardian: things a sharp bookkeeper would tap you on the shoulder about.
+ * Pure heuristics over the user's own books — explainable, no model calls.
+ */
+metricsRouter.get('/insights', async (req, res) => {
+  const invoices = await loadInvoices(req.userId)
+  const now = new Date()
+  const insights = []
+
+  // 1) possible duplicates: same client + amount, both still unpaid, issued close together
+  const open = invoices.filter((i) => i.status === 'sent' && i.balance > 0)
+  for (let a = 0; a < open.length; a++) {
+    for (let b = a + 1; b < open.length; b++) {
+      const x = open[a]
+      const y = open[b]
+      if (
+        String(x.clientId?._id) === String(y.clientId?._id) &&
+        x.amount === y.amount &&
+        Math.abs(new Date(x.issueDate) - new Date(y.issueDate)) < 30 * 86400000
+      ) {
+        insights.push({
+          type: 'duplicate',
+          message: `${x.number} and ${y.number} to ${x.clientId?.name} are both $${x.amount.toLocaleString('en-US')} — possible duplicate?`,
+          invoices: [x.number, y.number],
+        })
+      }
+    }
+  }
+
+  // 2) retainer gap: a client you bill on retainer, but nothing recent
+  const byClient = {}
+  for (const inv of invoices) {
+    const key = String(inv.clientId?._id || inv.clientId)
+    ;(byClient[key] ||= []).push(inv)
+  }
+  for (const list of Object.values(byClient)) {
+    const retainers = list.filter((i) => /retainer/i.test((i.lineItems || []).map((li) => li.description).join(' ') + ' ' + (i.notes || '')))
+    if (retainers.length === 0) continue
+    // drafts don't count — they were never sent to the client
+    const billed = list.filter((i) => i.status !== 'draft')
+    if (billed.length === 0) continue
+    const lastIssue = Math.max(...billed.map((i) => new Date(i.issueDate).getTime()))
+    const daysSince = Math.floor((now - lastIssue) / 86400000)
+    if (daysSince > 35) {
+      const client = list[0].clientId?.name
+      insights.push({
+        type: 'retainer-gap',
+        message: `You bill ${client} on retainer, but nothing has gone out in ${daysSince} days — forgot this month's invoice?`,
+        client,
+      })
+    }
+  }
+
+  // 3) broken promises: the client said a date, the date passed, still unpaid
+  for (const inv of open) {
+    if (inv.promisedDate && new Date(inv.promisedDate) < now) {
+      insights.push({
+        type: 'broken-promise',
+        message: `${inv.clientId?.name} promised to pay ${inv.number} by ${new Date(inv.promisedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} — that's passed and it's still open.`,
+        invoices: [inv.number],
+      })
+    }
+  }
+
+  res.json({ insights: insights.slice(0, 5) })
+})
+
 // Powers Penny's proactive opening message
 metricsRouter.get('/briefing', async (req, res) => {
   const invoices = await loadInvoices(req.userId)

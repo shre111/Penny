@@ -230,8 +230,14 @@ const EMAIL_PILL: Record<string, { label: string; cls: string }> = {
   sent: { label: 'Sent via Gmail', cls: 'bg-brand-100 text-brand-800' },
   simulated: { label: 'Saved (not sent)', cls: 'bg-stone-100 text-ink-soft' },
   queued: { label: 'Waiting for your OK', cls: 'bg-copper-100 text-copper-700' },
+  scheduled: { label: 'Auto-sending soon', cls: 'bg-amber-50 text-amber-flag' },
   dismissed: { label: 'Skipped', cls: 'bg-stone-100 text-ink-soft/70' },
   failed: { label: 'Failed', cls: 'bg-red-50 text-danger-600' },
+}
+
+function minutesUntil(iso?: string): number {
+  if (!iso) return 0
+  return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 60000))
 }
 
 export function Outbox({ emails, highlights }: { emails: EmailRecord[]; highlights: Set<string> }) {
@@ -290,6 +296,18 @@ export function Outbox({ emails, highlights }: { emails: EmailRecord[]; highligh
                     <p className="text-xs text-ink-soft truncate">to {e.to} · {fmtDate(e.createdAt)}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
+                    {e.status === 'scheduled' && (
+                      <button
+                        className="rounded-full px-2.5 py-0.5 text-[11px] font-bold bg-card border border-amber-200 text-amber-flag hover:bg-amber-50 cursor-pointer"
+                        onClick={(ev) => {
+                          ev.stopPropagation()
+                          api(`/api/emails/${e._id}/cancel`, { method: 'POST' }).catch(() => {})
+                        }}
+                        title="Stop this auto-send"
+                      >
+                        Sending in {minutesUntil(e.sendAt)}m — Cancel
+                      </button>
+                    )}
                     <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${(EMAIL_PILL[e.status] || EMAIL_PILL.simulated).cls}`}>
                       {(EMAIL_PILL[e.status] || EMAIL_PILL.simulated).label}
                     </span>

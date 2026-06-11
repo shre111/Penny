@@ -11,9 +11,12 @@ const emailSchema = new mongoose.Schema(
     to: { type: String, required: true },
     subject: { type: String, required: true },
     body: { type: String, required: true },
-    status: { type: String, enum: ['queued', 'sent', 'simulated', 'failed', 'dismissed'], required: true },
+    // 'scheduled' = auto-approved by earned autonomy; sends at sendAt unless cancelled
+    status: { type: String, enum: ['queued', 'scheduled', 'sent', 'simulated', 'failed', 'dismissed'], required: true },
     provider: { type: String, default: 'simulated' }, // 'composio-gmail' | 'simulated' | 'overnight'
     error: { type: String },
+    sendAt: { type: Date },
+    editedByOwner: { type: Boolean, default: false },
   },
   { timestamps: true }
 )

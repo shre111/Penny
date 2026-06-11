@@ -3,7 +3,7 @@ import remarkGfm from 'remark-gfm'
 import { Check, CircleAlert } from 'lucide-react'
 import type { ActivityEvent, Artifact, ChatMessage, InterruptAction } from '../../lib/types'
 import { CoinMark, Spinner } from '../ui'
-import { ApprovalCard, ChartCard, ExtractionCard, InvoiceListCard } from './cards'
+import { ApprovalCard, ChartCard, ExtractionCard, InvoiceListCard, PlanCard } from './cards'
 
 function ActivityFeed({ events }: { events: ActivityEvent[] }) {
   if (!events.length) return null
@@ -41,6 +41,7 @@ function Artifacts({
     <>
       {artifacts.map((a, i) => {
         if (a.type === 'chart') return <ChartCard key={i} data={a.data} />
+        if (a.type === 'plan') return <PlanCard key={i} data={a.data} />
         if (a.type === 'invoices') return <InvoiceListCard key={i} data={a.data} />
         if (a.type === 'extraction')
           return (
