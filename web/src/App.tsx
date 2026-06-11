@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import AppShell from './pages/AppShell'
 import Landing from './pages/Landing'
+import PublicInvoice from './pages/PublicInvoice'
 import { Spinner } from './components/ui'
 
 // '/' is the product when signed in, the pitch when not
@@ -35,6 +36,7 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<Public><Login /></Public>} />
             <Route path="/signup" element={<Public><Signup /></Public>} />
+            <Route path="/invoice/:token" element={<PublicInvoice />} />
             <Route path="/" element={<Home />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

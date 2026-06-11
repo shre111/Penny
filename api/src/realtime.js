@@ -72,6 +72,11 @@ function buildSummary(entity, action, doc) {
       ] || verb
     return `Email to ${doc?.to || 'a client'} (“${(doc?.subject || '').slice(0, 60)}”) ${state}`
   }
+  if (entity === 'proposal') {
+    const what = doc?.type === 'extension' ? 'a due-date extension' : 'an installment plan'
+    const state = { pending: 'requested by the client — waiting for your OK', approved: 'approved and applied', declined: 'declined' }[doc?.status] || verb
+    return `${doc?.invoiceNumber || 'An invoice'}: ${what} ${state}`
+  }
   return null
 }
 

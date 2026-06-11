@@ -39,6 +39,8 @@ FRIENDLY_RUNNING = {
     "ask_bookkeeper": "Asking the Bookkeeper…",
     "ask_analyst": "Asking the Analyst…",
     "get_invoice_pdf_link": "Preparing the PDF…",
+    "record_payment_promise": "Noting the payment date…",
+    "propose_arrangement": "Sending to the owner for approval…",
 }
 FRIENDLY_DONE = {
     "list_invoices": "Checked the invoices",
@@ -55,6 +57,8 @@ FRIENDLY_DONE = {
     "ask_bookkeeper": "Bookkeeper reported back",
     "ask_analyst": "Analyst reported back",
     "get_invoice_pdf_link": "PDF ready",
+    "record_payment_promise": "Payment date noted",
+    "propose_arrangement": "Sent for the owner's OK",
 }
 
 

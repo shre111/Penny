@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import crypto from 'node:crypto'
 import { Invoice, nextInvoiceNumber } from '../models/Invoice.js'
 import { Client } from '../models/Client.js'
 import { requireUserOrService } from '../auth/middleware.js'
@@ -107,6 +108,31 @@ invoicesRouter.post('/:id/payments', async (req, res) => {
   if (invoice.balance <= 0) invoice.status = 'paid'
   await invoice.save()
   await invoice.populate('clientId', 'name email contactName')
+  emitChange(req.userId, { entity: 'invoice', action: 'updated', id: invoice._id, actor: req.actor, doc: serialize(invoice) })
+  res.json({ invoice: serialize(invoice) })
+})
+
+// Mint (or return) the public share link for the client-facing concierge page
+invoicesRouter.post('/:id/share', async (req, res) => {
+  const invoice = await Invoice.findOne({ _id: req.params.id, userId: req.userId })
+  if (!invoice) return res.status(404).json({ error: 'Invoice not found' })
+  if (!invoice.shareToken) {
+    invoice.shareToken = crypto.randomBytes(18).toString('base64url')
+    await invoice.save()
+  }
+  res.json({ url: `/invoice/${invoice.shareToken}`, token: invoice.shareToken })
+})
+
+// The client's payment promise (recorded by the concierge on their behalf)
+invoicesRouter.post('/:id/promise', async (req, res) => {
+  const { date, note } = req.body || {}
+  if (!date || Number.isNaN(Date.parse(date))) return res.status(400).json({ error: 'A valid date is required' })
+  const invoice = await Invoice.findOneAndUpdate(
+    { _id: req.params.id, userId: req.userId },
+    { promisedDate: new Date(date), promiseNote: (note || '').slice(0, 300), promisedAt: new Date() },
+    { returnDocument: 'after' }
+  ).populate('clientId', 'name email contactName')
+  if (!invoice) return res.status(404).json({ error: 'Invoice not found' })
   emitChange(req.userId, { entity: 'invoice', action: 'updated', id: invoice._id, actor: req.actor, doc: serialize(invoice) })
   res.json({ invoice: serialize(invoice) })
 })

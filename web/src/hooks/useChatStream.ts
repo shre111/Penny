@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../lib/api'
+import { emitSpotlight, spotlightForTool } from '../lib/spotlight'
 import type { ActivityEvent, Artifact, ChatMessage, InterruptAction } from '../lib/types'
 
 export interface StreamingMessage {
@@ -86,6 +87,10 @@ export function useChatStream(sessionId: string | null) {
             const existing = acc.events.find((e) => e.id === data.id)
             if (existing) Object.assign(existing, data)
             else acc.events.push(data)
+            if (data.status === 'running') {
+              const target = spotlightForTool(data.tool)
+              if (target) emitSpotlight(target) // Penny points at what she's reading
+            }
           } else if (event === 'artifact') acc.artifacts.push(data)
           else if (event === 'interrupt') acc.interrupt = { actions: data.actions || [], status: 'pending' }
           else if (event === 'error' && !acc.content) acc.content = data.message || 'Something went wrong.'

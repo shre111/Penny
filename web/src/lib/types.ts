@@ -45,6 +45,20 @@ export interface Invoice {
   daysOverdue: number
   notes: string
   source: 'manual' | 'chat' | 'document'
+  promisedDate?: string | null
+  promiseNote?: string
+  installmentPlan?: { amount: number; date: string }[] | null
+  shareToken?: string
+}
+
+export interface Proposal {
+  _id: string
+  invoiceId: { _id: string; number: string; amount: number; dueDate: string } | null
+  type: 'extension' | 'installments'
+  details: { newDueDate?: string; installments?: { amount: number; date: string }[] }
+  clientReason: string
+  status: 'pending' | 'approved' | 'declined'
+  createdAt: string
 }
 
 export interface Summary {

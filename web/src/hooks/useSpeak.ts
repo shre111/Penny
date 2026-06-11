@@ -11,22 +11,34 @@ export function useSpeak() {
     }
   }, [supported])
 
-  const toggle = (text: string) => {
+  const speak = (text: string, onEnd?: () => void) => {
     if (!supported) return
-    if (speaking) {
-      window.speechSynthesis.cancel()
-      setSpeaking(false)
-      return
-    }
     const utterance = new SpeechSynthesisUtterance(text)
     utterance.rate = 1
     utterance.pitch = 1.05
-    utterance.onend = () => setSpeaking(false)
-    utterance.onerror = () => setSpeaking(false)
+    utterance.onend = () => {
+      setSpeaking(false)
+      onEnd?.()
+    }
+    utterance.onerror = () => {
+      setSpeaking(false)
+      onEnd?.()
+    }
     window.speechSynthesis.cancel()
     window.speechSynthesis.speak(utterance)
     setSpeaking(true)
   }
 
-  return { supported, speaking, toggle }
+  const stop = () => {
+    if (!supported) return
+    window.speechSynthesis.cancel()
+    setSpeaking(false)
+  }
+
+  const toggle = (text: string) => {
+    if (speaking) stop()
+    else speak(text)
+  }
+
+  return { supported, speaking, toggle, speak, stop }
 }

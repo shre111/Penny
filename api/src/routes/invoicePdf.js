@@ -20,6 +20,11 @@ export async function invoicePdfHandler(req, res) {
   )
   if (!invoice) return res.status(404).json({ error: 'Invoice not found' })
   const user = await User.findById(req.userId)
+  renderInvoicePdf(invoice, user, res)
+}
+
+/** Shared renderer — also used by the public (tokenized) invoice page. */
+export function renderInvoicePdf(invoice, user, res) {
   const inv = invoice.toObject({ virtuals: true })
 
   res.setHeader('Content-Type', 'application/pdf')

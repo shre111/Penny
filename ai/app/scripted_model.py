@@ -271,10 +271,58 @@ class ScriptedModel(BaseChatModel):
             'try "Who owes me money?", "Log an invoice for Acme, $450", "Chase the overdue invoices", or "Show me a chart".'
         )
 
+    # ── concierge: the client side of an invoice (public page) ────────────
+    def _concierge(self, messages) -> AIMessage:
+        last = messages[-1]
+        human = self._human_text(messages)
+        h = human.lower()
+
+        if isinstance(last, ToolMessage):
+            result = self._tool_result(last)
+            if result.get("error"):
+                return AIMessage(f"I'm sorry — I can't set that up myself ({result['error']}). You could leave me a payment date instead, and I'll pass it along.")
+            if last.name == "record_payment_promise":
+                return AIMessage(f"Thank you! I've noted {result.get('date')} — that really helps with planning. Anything else about this invoice?")
+            if last.name == "propose_arrangement":
+                return AIMessage("Done — I've sent that to the owner for a quick OK. You'll see the invoice update once it's approved. Anything else?")
+            if last.name == "get_invoice_pdf_link":
+                return AIMessage(f"Of course — [download the PDF here]({result.get('pdf_link')}).")
+            return AIMessage("All set.")
+
+        if "pdf" in h or "copy" in h or "download" in h:
+            return AIMessage("One moment…", tool_calls=[_tc("get_invoice_pdf_link", {})])
+        if "split" in h or "installment" in h or "instalment" in h or "two payments" in h or "half now" in h:
+            # balance is stated in the system prompt ("unpaid balance $X")
+            sys_text = messages[0].content if messages and isinstance(messages[0].content, str) else ""
+            m = re.search(r"unpaid balance \$([\d,]+(?:\.\d+)?)", sys_text)
+            balance = float(m.group(1).replace(",", "")) if m else 0.0
+            half = round(balance / 2, 2)
+            return AIMessage(
+                "Let me send that to the owner for approval…",
+                tool_calls=[_tc("propose_arrangement", {"kind": "installments", "reason": human, "installments": [
+                    {"amount": half, "date": (date.today() + timedelta(days=14)).isoformat()},
+                    {"amount": round(balance - half, 2), "date": (date.today() + timedelta(days=28)).isoformat()},
+                ]})],
+            )
+        if "more time" in h or "extension" in h or "extend" in h or "later" in h:
+            return AIMessage(
+                "Let me ask for a short extension…",
+                tool_calls=[_tc("propose_arrangement", {"kind": "extension", "reason": human, "new_due_date": (date.today() + timedelta(days=10)).isoformat()})],
+            )
+        if "pay" in h and ("by" in h or "on" in h or "friday" in h or "week" in h or "promise" in h):
+            return AIMessage(
+                "Wonderful — let me note that down…",
+                tool_calls=[_tc("record_payment_promise", {"date": (date.today() + timedelta(days=7)).isoformat(), "note": human[:200]})],
+            )
+        return AIMessage(
+            "(Concierge on the scripted dev model.) I can explain this invoice, send you the PDF, note a payment date, or ask the owner about more time / installments."
+        )
+
     def _generate(self, messages, stop=None, run_manager=None, **kwargs) -> ChatResult:
         handler = {
             "supervisor": self._supervisor,
             "bookkeeper": self._bookkeeper,
             "analyst": self._analyst,
+            "concierge": self._concierge,
         }.get(self.role, self._single)
         return ChatResult(generations=[ChatGeneration(message=handler(messages))])

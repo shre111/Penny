@@ -1,12 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Sparkles } from 'lucide-react'
 import { useLiveData } from '../../hooks/useLiveData'
 import type { Client, EmailRecord, Forecast, Invoice, Summary } from '../../lib/types'
 import { api } from '../../lib/api'
+import { onSpotlight, type SpotlightKey } from '../../lib/spotlight'
 import { Spinner } from '../ui'
 import { KpiCards, AgingChart, CashflowChart, ForecastCard } from './widgets'
 import { InvoiceTable, ClientsTable, Outbox } from './tables'
 import { ActivityFeed } from './ActivityFeed'
+import { ConciergeSettings } from './ConciergeSettings'
 
 type Tab = 'overview' | 'invoices' | 'clients' | 'outbox' | 'activity'
 
@@ -20,6 +22,20 @@ export function Dashboard() {
   const activities = useLiveData<{ activities: any[] }>('/api/activities', ['invoice', 'client', 'email'])
   const forecast = useLiveData<{ forecast: Forecast }>('/api/metrics/forecast', ['invoice'])
   const [seeding, setSeeding] = useState(false)
+
+  // Penny's pointer: spotlight the element she's currently reading/changing
+  const [spot, setSpot] = useState<SpotlightKey | null>(null)
+  const spotTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(
+    () =>
+      onSpotlight((key) => {
+        setSpot(key)
+        if (spotTimer.current) clearTimeout(spotTimer.current)
+        spotTimer.current = setTimeout(() => setSpot(null), 2500)
+      }),
+    []
+  )
+  const spotCls = (key: SpotlightKey) => (spot === key ? 'spotlight' : '')
 
   const queuedCount = emails.data?.emails.filter((e) => e.status === 'queued').length || undefined
   const tabs: { key: Tab; label: string; badge?: number }[] = [
@@ -81,18 +97,31 @@ export function Dashboard() {
 
       {tab === 'overview' && (
         <div className="space-y-4">
-          <KpiCards summary={summary.data.summary} />
-          <div className="grid lg:grid-cols-2 gap-4">
+          <div className={spotCls('kpis')}>
+            <KpiCards summary={summary.data.summary} />
+          </div>
+          <div className={`grid lg:grid-cols-2 gap-4 ${spotCls('charts')}`}>
             {charts.data && <AgingChart data={charts.data.aging} />}
             {charts.data && <CashflowChart data={charts.data.cashflow} />}
             {forecast.data && <ForecastCard forecast={forecast.data.forecast} />}
           </div>
+          <div className={spotCls('invoices')}>
+            <InvoiceTable invoices={invoices.data.invoices} highlights={invoices.highlights} />
+          </div>
+        </div>
+      )}
+      {tab === 'invoices' && (
+        <div className={spotCls('invoices')}>
           <InvoiceTable invoices={invoices.data.invoices} highlights={invoices.highlights} />
         </div>
       )}
-      {tab === 'invoices' && <InvoiceTable invoices={invoices.data.invoices} highlights={invoices.highlights} />}
       {tab === 'clients' && <ClientsTable clients={clients.data?.clients || []} highlights={clients.highlights} />}
-      {tab === 'outbox' && <Outbox emails={emails.data?.emails || []} highlights={emails.highlights} />}
+      {tab === 'outbox' && (
+        <div className="space-y-4">
+          <ConciergeSettings />
+          <Outbox emails={emails.data?.emails || []} highlights={emails.highlights} />
+        </div>
+      )}
       {tab === 'activity' && <ActivityFeed activities={activities.data?.activities || []} refetch={activities.refetch} />}
     </div>
   )

@@ -34,6 +34,13 @@ const invoiceSchema = new mongoose.Schema(
     notes: { type: String, default: '' },
     source: { type: String, enum: ['manual', 'chat', 'document'], default: 'manual' },
     lastReminderAt: { type: Date },
+    // client concierge: public share link + the client's payment promise
+    shareToken: { type: String, index: true },
+    promisedDate: { type: Date },
+    promiseNote: { type: String },
+    promisedAt: { type: Date },
+    // approved installment arrangement, if any
+    installmentPlan: { type: [{ amount: Number, date: Date }], default: undefined },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 )

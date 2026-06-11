@@ -69,6 +69,32 @@ def resume(body: ResumeIn, x_service_token: str | None = Header(default=None)):
     )
 
 
+class ConciergeIn(BaseModel):
+    thread_id: str
+    user_id: str
+    content: str
+    invoice: dict
+    business_name: str = ""
+    owner_name: str = ""
+    share_token: str
+    guardrails: dict = {}
+
+
+@app.post("/concierge")
+def concierge(body: ConciergeIn, x_service_token: str | None = Header(default=None)):
+    """The client-facing invoice concierge (public page) — same SSE protocol."""
+    check_service_token(x_service_token)
+    from .concierge import build_concierge_agent
+
+    agent = build_concierge_agent(body.model_dump())
+    agent_input = {"messages": [{"role": "user", "content": body.content}]}
+    return StreamingResponse(
+        stream_agent_sse(agent, agent_input, body.thread_id),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
 class OvernightIn(BaseModel):
     user_id: str
     user_name: str = ""

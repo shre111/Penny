@@ -9,6 +9,18 @@ const userSchema = new mongoose.Schema(
     businessName: { type: String, trim: true, default: '' },
     avatarUrl: { type: String, default: '' },
     isDemo: { type: Boolean, default: false },
+    // guardrails for the client-facing concierge on public invoice pages
+    concierge: {
+      type: new mongoose.Schema(
+        {
+          enabled: { type: Boolean, default: true },
+          maxExtensionDays: { type: Number, default: 14, min: 0, max: 90 },
+          maxInstallments: { type: Number, default: 3, min: 1, max: 12 },
+        },
+        { _id: false }
+      ),
+      default: () => ({}),
+    },
   },
   { timestamps: true }
 )
@@ -22,6 +34,11 @@ userSchema.methods.toSafeJSON = function () {
     avatarUrl: this.avatarUrl,
     isDemo: this.isDemo,
     hasGoogle: Boolean(this.googleId),
+    concierge: {
+      enabled: this.concierge?.enabled ?? true,
+      maxExtensionDays: this.concierge?.maxExtensionDays ?? 14,
+      maxInstallments: this.concierge?.maxInstallments ?? 3,
+    },
   }
 }
 

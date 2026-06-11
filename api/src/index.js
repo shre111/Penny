@@ -16,6 +16,8 @@ import { chatRouter } from './routes/chat.js'
 import { uploadsRouter } from './routes/uploads.js'
 import { demoRouter } from './routes/demo.js'
 import { activitiesRouter } from './routes/activities.js'
+import { proposalsRouter } from './routes/proposals.js'
+import { publicRouter } from './routes/public.js'
 import { overnightRouter } from './routes/overnight.js'
 import { invoicePdfHandler } from './routes/invoicePdf.js'
 import { requireAuth } from './auth/middleware.js'
@@ -41,6 +43,8 @@ app.use('/api/chat', chatRouter)
 app.use('/api/uploads', uploadsRouter)
 app.use('/api/demo', demoRouter)
 app.use('/api/activities', activitiesRouter)
+app.use('/api/proposals', proposalsRouter)
+app.use('/api/public', publicRouter)
 app.use('/api/overnight', overnightRouter)
 app.get('/api/invoices/:id/pdf', requireAuth, invoicePdfHandler)
 

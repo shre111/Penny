@@ -78,3 +78,19 @@ authRouter.get('/me', requireAuth, async (req, res) => {
 authRouter.get('/config', (_req, res) => {
   res.json({ googleClientId: config.googleClientId || null })
 })
+
+// Concierge guardrails: what Penny may agree to with clients on public pages
+authRouter.patch('/concierge', requireAuth, async (req, res) => {
+  const user = await User.findById(req.userId)
+  if (!user) return res.status(401).json({ error: 'Account not found' })
+  const { enabled, maxExtensionDays, maxInstallments } = req.body || {}
+  if (enabled !== undefined) user.concierge.enabled = Boolean(enabled)
+  if (maxExtensionDays !== undefined) {
+    user.concierge.maxExtensionDays = Math.max(0, Math.min(90, Number(maxExtensionDays) || 0))
+  }
+  if (maxInstallments !== undefined) {
+    user.concierge.maxInstallments = Math.max(1, Math.min(12, Number(maxInstallments) || 1))
+  }
+  await user.save()
+  res.json({ user: user.toSafeJSON() })
+})

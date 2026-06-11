@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ChevronDown, Mic, Paperclip, Plus, SendHorizonal, Square, Trash2, Volume2 } from 'lucide-react'
+import { ChevronDown, Headphones, Mic, Paperclip, Plus, SendHorizonal, Square, Trash2, Volume2 } from 'lucide-react'
 import { api } from '../../lib/api'
 import { useAuth } from '../../lib/auth'
-import type { Briefing, ChatSession, EmailRecord } from '../../lib/types'
+import type { Briefing, ChatSession, EmailRecord, Proposal } from '../../lib/types'
 import { fmtMoney } from '../../lib/format'
 import { useChatStream } from '../../hooks/useChatStream'
 import { useLiveData } from '../../hooks/useLiveData'
@@ -12,6 +12,17 @@ import { onAskPenny } from '../../lib/askPenny'
 import { CoinMark, Spinner } from '../ui'
 import { MessageView } from './MessageView'
 import { QueuedDraftsCard } from './QueuedDraftsCard'
+import { ProposalsCard } from './ProposalsCard'
+
+/** Markdown → something pleasant to hear. */
+function speakable(md: string): string {
+  return md
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/[*_#`>|]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 600)
+}
 
 /** The same words the briefing shows, phrased for the ear. */
 function briefingSpeech(b: Briefing, name?: string): string {
@@ -75,8 +86,58 @@ export function ChatPanel() {
     []
   )
 
-  const speech = useSpeechInput((text) => setInput(text))
+  // client-negotiated arrangements waiting for the owner's decision
+  const pendingProposals = useLiveData<{ proposals: Proposal[] }>('/api/proposals?status=pending', ['proposal'])
+  const [proposalsSnapshot, setProposalsSnapshot] = useState<Proposal[]>([])
+  useEffect(() => {
+    if ((pendingProposals.data?.proposals.length ?? 0) > 0 && proposalsSnapshot.length === 0) {
+      // Same freeze-first-fetch pattern as the drafts card (see comment there).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setProposalsSnapshot(pendingProposals.data!.proposals)
+    }
+  }, [pendingProposals.data, proposalsSnapshot.length])
+
+  // hands-free: she answers aloud, then listens for your next request
+  const [handsFree, setHandsFree] = useState(false)
+  const handsFreeRef = useRef(false)
+  const lastSpokenRef = useRef<string | null>(null)
+  const submitRef = useRef<(text?: string) => void>(() => {})
+
+  const speech = useSpeechInput((text, isFinal) => {
+    setInput(text)
+    if (isFinal && handsFreeRef.current && text.trim()) {
+      submitRef.current(text)
+    }
+  })
   const speak = useSpeak()
+  const speakRef = useRef(speak)
+  const speechRef = useRef(speech)
+  useEffect(() => {
+    speakRef.current = speak
+    speechRef.current = speech
+  })
+
+  useEffect(() => {
+    handsFreeRef.current = handsFree
+    if (!handsFree) {
+      speakRef.current.stop()
+      speechRef.current.stop()
+    } else if (!busy) {
+      speechRef.current.start() // start listening the moment it's switched on
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handsFree])
+
+  // when a turn finishes in hands-free mode: read the answer, then listen again
+  useEffect(() => {
+    if (!handsFree || busy) return
+    const last = messages[messages.length - 1]
+    if (!last || last.role !== 'assistant' || !last.content || last._id === lastSpokenRef.current) return
+    lastSpokenRef.current = last._id
+    speakRef.current.speak(speakable(last.content), () => {
+      if (handsFreeRef.current) speechRef.current.start()
+    })
+  }, [messages, busy, handsFree])
 
   // load (or start) a conversation
   useEffect(() => {
@@ -99,7 +160,7 @@ export function ChatPanel() {
   useEffect(() => {
     const el = scrollRef.current
     if (el) el.scrollTop = el.scrollHeight
-  }, [messages, streaming, draftsSnapshot])
+  }, [messages, streaming, draftsSnapshot, proposalsSnapshot])
 
   const newConversation = async () => {
     const created = await api<{ session: ChatSession }>('/api/chat/sessions', { method: 'POST' })
@@ -131,6 +192,10 @@ export function ChatPanel() {
     [input, busy, send, sessionId]
   )
 
+  useEffect(() => {
+    submitRef.current = submit
+  }, [submit])
+
   const currentSession = sessions.find((s) => s._id === sessionId)
   const showWelcome = !loadingHistory && messages.length === 0 && !streaming
 
@@ -146,6 +211,19 @@ export function ChatPanel() {
           </div>
         </div>
         <div className="flex items-center gap-1.5">
+          {speech.supported && speak.supported && (
+            <button
+              className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+                handsFree ? 'bg-copper-100 text-copper-600 ring-1 ring-copper-300' : 'text-ink-soft hover:text-ink'
+              }`}
+              onClick={() => setHandsFree((v) => !v)}
+              aria-pressed={handsFree}
+              aria-label={handsFree ? 'Turn off hands-free conversation' : 'Hands-free conversation: she answers aloud, then listens'}
+              title={handsFree ? 'Hands-free is ON — click to stop' : 'Hands-free conversation'}
+            >
+              <Headphones className="h-4 w-4" />
+            </button>
+          )}
           <div className="relative">
             <button
               className="btn-ghost text-xs py-1.5 px-3 max-w-44"
@@ -236,6 +314,9 @@ export function ChatPanel() {
         {messages.map((m) => (
           <MessageView key={m._id} message={m} onResume={resume} onPatchArtifact={patchMessageArtifact} />
         ))}
+        {proposalsSnapshot.length > 0 && (
+          <ProposalsCard proposals={proposalsSnapshot} onHandled={() => pendingProposals.refetch()} />
+        )}
         {draftsSnapshot.length > 0 && (
           <QueuedDraftsCard drafts={draftsSnapshot} onHandled={() => queued.refetch()} />
         )}

@@ -18,12 +18,23 @@ export function useSpeechInput(onTranscript: (text: string, isFinal: boolean) =>
     return () => recRef.current?.abort?.()
   }, [])
 
+  const stop = () => recRef.current?.stop()
+
+  const start = () => {
+    if (!Recognition || listening) return
+    doStart()
+  }
+
   const toggle = () => {
     if (!Recognition) return
     if (listening) {
       recRef.current?.stop()
       return
     }
+    doStart()
+  }
+
+  function doStart() {
     const rec = new Recognition()
     rec.lang = navigator.language || 'en-US'
     rec.interimResults = true
@@ -44,5 +55,5 @@ export function useSpeechInput(onTranscript: (text: string, isFinal: boolean) =>
     setListening(true)
   }
 
-  return { supported: Boolean(Recognition), listening, toggle }
+  return { supported: Boolean(Recognition), listening, toggle, start, stop }
 }

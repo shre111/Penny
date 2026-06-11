@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BellRing, Camera, ChevronDown, FileDown, FileText, Mail, MessageCircle, MoonStar } from 'lucide-react'
+import { BellRing, Camera, Check, ChevronDown, FileDown, FileText, Link2, Mail, MessageCircle, MoonStar } from 'lucide-react'
 import type { Client, EmailRecord, Invoice } from '../../lib/types'
 import { dueLabel, fmtDate, fmtMoney, STATUS_LABELS, STATUS_STYLES } from '../../lib/format'
 import { askPenny } from '../../lib/askPenny'
@@ -21,6 +21,18 @@ const SOURCE_BADGE: Record<string, { label: string; icon: React.ReactNode }> = {
 
 export function InvoiceTable({ invoices, highlights }: { invoices: Invoice[]; highlights: Set<string> }) {
   const [filter, setFilter] = useState<'all' | 'overdue' | 'open' | 'paid' | 'draft'>('all')
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  const shareInvoice = async (inv: Invoice) => {
+    try {
+      const r = await api<{ url: string }>(`/api/invoices/${inv._id}/share`, { method: 'POST' })
+      await navigator.clipboard.writeText(`${window.location.origin}${r.url}`)
+      setCopiedId(inv._id)
+      setTimeout(() => setCopiedId(null), 2000)
+    } catch {
+      /* clipboard denied — no-op */
+    }
+  }
   // urgency first: overdue (latest first), then awaiting by due date, drafts, then paid history
   const URGENCY: Record<string, number> = { overdue: 0, sent: 1, draft: 2, void: 3, paid: 4 }
   const filtered = invoices
@@ -107,6 +119,9 @@ export function InvoiceTable({ invoices, highlights }: { invoices: Invoice[]; hi
                   <td className={`px-4 py-3 text-right whitespace-nowrap text-xs ${inv.effectiveStatus === 'overdue' ? 'text-danger-600 font-semibold' : 'text-ink-soft'}`}>
                     {dueLabel(inv)}
                     <span className="block text-[11px] text-ink-soft/70">{fmtDate(inv.dueDate)}</span>
+                    {inv.promisedDate && inv.balance > 0 && (
+                      <span className="block text-[11px] font-semibold text-brand-600">🤝 promised {fmtDate(inv.promisedDate)}</span>
+                    )}
                   </td>
                   <td className="px-2 py-3 whitespace-nowrap text-right">
                     <span className="inline-flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -138,6 +153,14 @@ export function InvoiceTable({ invoices, highlights }: { invoices: Invoice[]; hi
                       >
                         <FileDown className="h-4 w-4" />
                       </a>
+                      <button
+                        className="p-1.5 rounded-lg text-ink-soft hover:text-copper-600 hover:bg-copper-100 cursor-pointer"
+                        title={copiedId === inv._id ? 'Link copied!' : `Copy the client link for ${inv.number} — your client can chat with Penny there`}
+                        aria-label={`Copy client link for ${inv.number}`}
+                        onClick={() => shareInvoice(inv)}
+                      >
+                        {copiedId === inv._id ? <Check className="h-4 w-4 text-brand-600" /> : <Link2 className="h-4 w-4" />}
+                      </button>
                     </span>
                   </td>
                 </tr>

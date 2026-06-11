@@ -10,6 +10,7 @@ export interface User {
   avatarUrl: string
   isDemo: boolean
   hasGoogle: boolean
+  concierge?: { enabled: boolean; maxExtensionDays: number; maxInstallments: number }
 }
 
 interface AuthCtx {

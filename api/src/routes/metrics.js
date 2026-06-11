@@ -135,8 +135,19 @@ metricsRouter.get('/forecast', async (req, res) => {
     const b = behavior[clientKey]
     const shiftDays = Math.max(0, b?.avgDaysLate ?? 0)
     let expected = new Date(new Date(inv.dueDate).getTime() + shiftDays * 86400000)
-    // overdue or imminent-but-slipping: assume it lands a few days from now
-    if (expected < new Date(startOfToday.getTime() + 2 * 86400000)) {
+    let basis = b?.label ? `${inv.clientId?.name} ${b.label}` : 'no payment history yet — assuming on time'
+    // a client's own promise (made to the concierge) beats any inference
+    if (inv.promisedDate) {
+      const promised = new Date(inv.promisedDate)
+      if (promised >= startOfToday) {
+        expected = promised
+        basis = 'the client promised this date'
+      } else {
+        expected = new Date(startOfToday.getTime() + 3 * 86400000)
+        basis = 'promised date slipped — worth a follow-up'
+      }
+    } else if (expected < new Date(startOfToday.getTime() + 2 * 86400000)) {
+      // overdue or imminent-but-slipping: assume it lands a few days from now
       expected = new Date(startOfToday.getTime() + 3 * 86400000)
     }
     expectedPayments.push({
@@ -146,7 +157,8 @@ metricsRouter.get('/forecast', async (req, res) => {
       amount: inv.balance,
       dueDate: inv.dueDate,
       expectedDate: expected,
-      basis: b?.label ? `${inv.clientId?.name} ${b.label}` : 'no payment history yet — assuming on time',
+      basis,
+      promised: Boolean(inv.promisedDate),
       overdue: inv.effectiveStatus === 'overdue',
     })
   }
