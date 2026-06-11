@@ -4,12 +4,13 @@ import { useLiveData } from '../../hooks/useLiveData'
 import type { Client, EmailRecord, Forecast, Invoice, Summary } from '../../lib/types'
 import { api } from '../../lib/api'
 import { onSpotlight, type SpotlightKey } from '../../lib/spotlight'
-import { Spinner } from '../ui'
+import { DashboardSkeleton, Spinner } from '../ui'
 import { KpiCards, AgingChart, CashflowChart, ForecastCard } from './widgets'
 import { InvoiceTable, ClientsTable, Outbox } from './tables'
 import { ActivityFeed } from './ActivityFeed'
 import { ConciergeSettings } from './ConciergeSettings'
 import { TrustCard } from './TrustCard'
+import { KnowledgeCard } from './KnowledgeCard'
 
 type Tab = 'overview' | 'invoices' | 'clients' | 'outbox' | 'activity'
 
@@ -48,11 +49,7 @@ export function Dashboard() {
   ]
 
   if (!summary.data || !invoices.data) {
-    return (
-      <div className="flex items-center justify-center h-64 text-ink-soft">
-        <Spinner className="h-6 w-6" />
-      </div>
-    )
+    return <DashboardSkeleton />
   }
 
   const isEmpty = summary.data.summary.invoiceCount === 0 && (clients.data?.clients.length ?? 0) === 0
@@ -121,6 +118,7 @@ export function Dashboard() {
         <div className="space-y-4">
           <TrustCard />
           <ConciergeSettings />
+          <KnowledgeCard />
           <Outbox emails={emails.data?.emails || []} highlights={emails.highlights} />
         </div>
       )}

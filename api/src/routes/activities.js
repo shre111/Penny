@@ -9,7 +9,9 @@ export const activitiesRouter = Router()
 activitiesRouter.use(requireAuth)
 
 activitiesRouter.get('/', async (req, res) => {
-  const activities = await Activity.find({ userId: req.userId }).sort({ createdAt: -1 }).limit(60).lean()
+  const filter = { userId: req.userId }
+  if (req.query.entityId) filter.entityId = req.query.entityId
+  const activities = await Activity.find(filter).sort({ createdAt: -1 }).limit(60).lean()
   res.json({ activities })
 })
 

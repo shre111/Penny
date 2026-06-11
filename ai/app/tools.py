@@ -285,6 +285,18 @@ def build_tools(user_id: str) -> list:
         return json.dumps({"sent": False, "error": error})
 
     @tool
+    def search_knowledge(query: str) -> str:
+        """Search the business's own knowledge base (policies, terms, FAQ the owner
+        taught Penny). Use for any question about how the business operates —
+        late fees, turnaround, refunds. Answer ONLY from what comes back; cite the source."""
+        from .knowledge import search
+
+        results = search(user_id, query)
+        if not results:
+            return json.dumps({"found": False, "note": "nothing in the knowledge base matches"})
+        return json.dumps({"found": True, "results": [{"source": r["source"], "text": r["chunk"]} for r in results]})
+
+    @tool
     def save_memory(fact: str) -> str:
         """Remember a durable fact or preference about the user/business for future
         conversations (e.g. 'Net-30 payment terms', 'VIP client: Acme Hardware')."""
@@ -304,5 +316,5 @@ def build_tools(user_id: str) -> list:
         ],
         "analyst": [get_business_metrics, make_chart, make_rescue_plan],
         "outreach": [send_email],
-        "memory": [save_memory],
+        "memory": [save_memory, search_knowledge],
     }

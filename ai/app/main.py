@@ -95,6 +95,53 @@ def concierge(body: ConciergeIn, x_service_token: str | None = Header(default=No
     )
 
 
+class KnowledgeIngestIn(BaseModel):
+    user_id: str
+    source: str
+    text: str
+
+
+@app.post("/knowledge/ingest")
+def knowledge_ingest(body: KnowledgeIngestIn, x_service_token: str | None = Header(default=None)):
+    """Chunk + embed a knowledge source ('Teach Penny your business')."""
+    check_service_token(x_service_token)
+    from .knowledge import ingest
+
+    try:
+        return {"chunks": ingest(body.text, body.source)}
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(422, f"embedding failed: {str(e)[:200]}") from e
+
+
+class DigestIn(BaseModel):
+    user_id: str
+    user_name: str = ""
+    business_name: str = ""
+    owner_email: str
+
+
+@app.post("/digest")
+def digest(body: DigestIn, x_service_token: str | None = Header(default=None)):
+    """Compose + send the weekly owner digest."""
+    check_service_token(x_service_token)
+    from .digest import run_digest
+
+    return run_digest(body.user_id, body.user_name, body.business_name, body.owner_email)
+
+
+class CheckRepliesIn(BaseModel):
+    user_id: str
+
+
+@app.post("/check-replies")
+def check_replies(body: CheckRepliesIn, x_service_token: str | None = Header(default=None)):
+    """Scan the connected Gmail inbox for client replies to reminders."""
+    check_service_token(x_service_token)
+    from .replies import check_replies as run
+
+    return run(body.user_id)
+
+
 class OvernightIn(BaseModel):
     user_id: str
     user_name: str = ""

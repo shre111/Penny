@@ -5,6 +5,7 @@ import { dueLabel, fmtDate, fmtMoney, STATUS_LABELS, STATUS_STYLES } from '../..
 import { askPenny } from '../../lib/askPenny'
 import { api } from '../../lib/api'
 import { EmptyState, Spinner } from '../ui'
+import { InvoiceDrawer } from './InvoiceDrawer'
 
 function StatusPill({ status }: { status: string }) {
   return (
@@ -22,6 +23,7 @@ const SOURCE_BADGE: Record<string, { label: string; icon: React.ReactNode }> = {
 export function InvoiceTable({ invoices, highlights }: { invoices: Invoice[]; highlights: Set<string> }) {
   const [filter, setFilter] = useState<'all' | 'overdue' | 'open' | 'paid' | 'draft'>('all')
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [drawerInvoice, setDrawerInvoice] = useState<Invoice | null>(null)
 
   const shareInvoice = async (inv: Invoice) => {
     try {
@@ -95,9 +97,10 @@ export function InvoiceTable({ invoices, highlights }: { invoices: Invoice[]; hi
               {filtered.map((inv) => (
                 <tr
                   key={inv._id}
-                  className={`group border-b border-line/60 last:border-0 hover:bg-paper/50 transition-colors ${
+                  className={`group border-b border-line/60 last:border-0 hover:bg-paper/50 transition-colors cursor-pointer ${
                     highlights.has(inv._id) ? 'animate-glow' : ''
                   }`}
+                  onClick={() => setDrawerInvoice(inv)}
                 >
                   <td className="px-4 py-3 font-semibold whitespace-nowrap">
                     {inv.number}
@@ -129,7 +132,7 @@ export function InvoiceTable({ invoices, highlights }: { invoices: Invoice[]; hi
                         className="p-1.5 rounded-lg text-ink-soft hover:text-brand-700 hover:bg-brand-50 cursor-pointer"
                         title={`Ask Penny about ${inv.number}`}
                         aria-label={`Ask Penny about ${inv.number}`}
-                        onClick={() => askPenny(`Tell me about invoice ${inv.number} — where it stands and what you'd do next.`)}
+                        onClick={(e) => { e.stopPropagation(); askPenny(`Tell me about invoice ${inv.number} — where it stands and what you'd do next.`) }}
                       >
                         <MessageCircle className="h-4 w-4" />
                       </button>
@@ -138,7 +141,7 @@ export function InvoiceTable({ invoices, highlights }: { invoices: Invoice[]; hi
                           className="p-1.5 rounded-lg text-ink-soft hover:text-copper-600 hover:bg-copper-100 cursor-pointer"
                           title={`Have Penny chase ${inv.number}`}
                           aria-label={`Have Penny chase ${inv.number}`}
-                          onClick={() => askPenny(`Draft a payment reminder for invoice ${inv.number}.`)}
+                          onClick={(e) => { e.stopPropagation(); askPenny(`Draft a payment reminder for invoice ${inv.number}.`) }}
                         >
                           <BellRing className="h-4 w-4" />
                         </button>
@@ -150,6 +153,7 @@ export function InvoiceTable({ invoices, highlights }: { invoices: Invoice[]; hi
                         href={`/api/invoices/${inv._id}/pdf`}
                         target="_blank"
                         rel="noreferrer"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <FileDown className="h-4 w-4" />
                       </a>
@@ -157,7 +161,7 @@ export function InvoiceTable({ invoices, highlights }: { invoices: Invoice[]; hi
                         className="p-1.5 rounded-lg text-ink-soft hover:text-copper-600 hover:bg-copper-100 cursor-pointer"
                         title={copiedId === inv._id ? 'Link copied!' : `Copy the client link for ${inv.number} — your client can chat with Penny there`}
                         aria-label={`Copy client link for ${inv.number}`}
-                        onClick={() => shareInvoice(inv)}
+                        onClick={(e) => { e.stopPropagation(); shareInvoice(inv) }}
                       >
                         {copiedId === inv._id ? <Check className="h-4 w-4 text-brand-600" /> : <Link2 className="h-4 w-4" />}
                       </button>
@@ -169,6 +173,7 @@ export function InvoiceTable({ invoices, highlights }: { invoices: Invoice[]; hi
           </table>
         </div>
       )}
+      {drawerInvoice && <InvoiceDrawer invoice={drawerInvoice} onClose={() => setDrawerInvoice(null)} />}
     </div>
   )
 }
@@ -242,40 +247,64 @@ function minutesUntil(iso?: string): number {
 
 export function Outbox({ emails, highlights }: { emails: EmailRecord[]; highlights: Set<string> }) {
   const [open, setOpen] = useState<string | null>(null)
-  const [running, setRunning] = useState(false)
+  const [running, setRunning] = useState<string | null>(null)
   const [runResult, setRunResult] = useState('')
 
-  const runOvernight = async () => {
-    setRunning(true)
+  const runJob = async (job: 'overnight' | 'replies' | 'digest') => {
+    setRunning(job)
     setRunResult('')
     try {
-      const r = await api<{ queued: number; skipped: number }>('/api/overnight/run', { method: 'POST' })
-      setRunResult(
-        r.queued > 0
-          ? `Queued ${r.queued} new draft${r.queued === 1 ? '' : 's'} — review them in the chat`
-          : 'Nothing new to chase — everyone is either current or recently reminded'
-      )
+      if (job === 'overnight') {
+        const r = await api<{ queued: number }>('/api/overnight/run', { method: 'POST' })
+        setRunResult(
+          r.queued > 0
+            ? `Queued ${r.queued} new draft${r.queued === 1 ? '' : 's'} — review them in the chat`
+            : 'Nothing new to chase — everyone is either current or recently reminded'
+        )
+      } else if (job === 'replies') {
+        const r = await api<{ checked: number; findings: any[]; error?: string }>('/api/overnight/check-replies', { method: 'POST' })
+        if (r.error) setRunResult(`Inbox check: ${r.error}`)
+        else if (r.findings.length === 0) setRunResult(`Checked ${r.checked} recent email${r.checked === 1 ? '' : 's'} — no client replies about payment`)
+        else
+          setRunResult(
+            r.findings
+              .map((f) => `${f.client}: ${f.summary}${f.recorded_on ? ` → promise recorded on ${f.recorded_on}` : ''}`)
+              .join(' · ')
+          )
+      } else {
+        const r = await api<{ status: string }>('/api/overnight/digest', { method: 'POST' })
+        setRunResult(r.status === 'sent' ? 'Digest sent — check your inbox 📬' : 'Digest written and saved to the outbox (sending not configured)')
+      }
     } catch (err: any) {
       setRunResult(err.message)
     } finally {
-      setRunning(false)
+      setRunning(null)
     }
   }
 
   return (
     <div className="card overflow-hidden">
-      <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-1">
+      <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-1 flex-wrap">
         <div>
           <h3 className="font-semibold">Outbox</h3>
           <p className="text-xs text-ink-soft pb-2">Every email Penny has drafted or sent for you</p>
         </div>
         <div className="text-right">
-          <button className="btn-ghost text-xs py-1.5 px-3" onClick={runOvernight} disabled={running}>
-            {running ? <Spinner className="h-3.5 w-3.5" /> : <MoonStar className="h-3.5 w-3.5" />}
-            Run the overnight check now
-          </button>
-          <p className="text-[10.5px] text-ink-soft/70 mt-1">runs by itself every morning at 6:00</p>
-          {runResult && <p className="text-[11px] text-brand-700 font-medium mt-0.5 max-w-56">{runResult}</p>}
+          <div className="flex gap-1.5 flex-wrap justify-end">
+            <button className="btn-ghost text-xs py-1.5 px-3" onClick={() => runJob('overnight')} disabled={running !== null} title="Runs by itself every morning at 6:00">
+              {running === 'overnight' ? <Spinner className="h-3.5 w-3.5" /> : <MoonStar className="h-3.5 w-3.5" />}
+              Overnight check
+            </button>
+            <button className="btn-ghost text-xs py-1.5 px-3" onClick={() => runJob('replies')} disabled={running !== null} title="Scan your Gmail inbox for client replies about payment">
+              {running === 'replies' ? <Spinner className="h-3.5 w-3.5" /> : <Mail className="h-3.5 w-3.5" />}
+              Check for replies
+            </button>
+            <button className="btn-ghost text-xs py-1.5 px-3" onClick={() => runJob('digest')} disabled={running !== null} title="Penny emails YOU a week-in-review (also runs Sundays at 18:00)">
+              {running === 'digest' ? <Spinner className="h-3.5 w-3.5" /> : <FileText className="h-3.5 w-3.5" />}
+              Email my digest
+            </button>
+          </div>
+          {runResult && <p className="text-[11px] text-brand-700 font-medium mt-1 max-w-md">{runResult}</p>}
         </div>
       </div>
       {emails.length === 0 ? (

@@ -338,10 +338,12 @@ export function ChatPanel() {
           <QueuedDraftsCard drafts={draftsSnapshot} onHandled={() => queued.refetch()} />
         )}
         {streaming && (
+          <div aria-live="polite" aria-busy="true">
           <MessageView
             message={{ role: 'assistant', content: streaming.content, events: streaming.events, artifacts: streaming.artifacts }}
             isStreaming
           />
+          </div>
         )}
         {loadingHistory && (
           <div className="flex justify-center py-8 text-ink-soft"><Spinner className="h-5 w-5" /></div>

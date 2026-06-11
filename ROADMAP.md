@@ -28,8 +28,14 @@ Goal: go past the basics before the M32 deadline (~June 12, 2026). Ranked by imp
 - [x] **Earned autonomy** ⭐ — Penny EARNS auto-send: 5 untouched approvals (zero skips) unlock the toggle; even then every auto-send waits 15 minutes in a cancel window, fired by a minute-cron, fully on the Activity record. Trust bar + governance UI on the Outbox tab.
 - [x] **"Penny noticed" guardian** — duplicate invoices, forgotten retainers, broken promises — explainable heuristics over the owner's own books, surfaced in the briefing and readable by the agent.
 - [x] **Rescue plans** — "Build me a rescue plan" → executable checklist artifact (chase, follow up broken promises, bill forgotten retainers, resolve duplicates), each step one tap into the composer.
+- [x] **RAG knowledge base — "Teach Penny your business"** ⭐ — paste/upload policies → chunked + embedded (Gemini embeddings, hashed-BoW zero-key fallback) → in-Mongo vectors, exact cosine at SMB scale → search_knowledge tool in BOTH personas with citations; the client concierge answers policy questions from the owner's own documents
+- [x] **Reply ingestion** — Composio Gmail fetch + intent extraction: client replies to reminders become recorded payment promises ("Check for replies" button + structured-output reader with keyword fallback)
+- [x] **Weekly owner digest** — Sunday 18:00 cron (+ manual button): Penny emails YOU the week-in-review through your own Gmail
+- [x] **Invoice drawer** — click any row: full story (amounts, plan, promise, reminders, client requests, history) + actions
+- [x] **Eval suite** — `npm test`: 26 assertions over the real stack on the scripted model (auth, tools, HITL, concierge, guardian, trust gates)
+- [x] **PWA + polish** — installable manifest/icons, skeleton loaders, aria-live streaming region
 - [ ] **9. CSV import** (~1–2h) — bulk-load clients/invoices; useful for reviewers with their own data.
-- [ ] **10. LangSmith tracing** (~10 min) — env vars only; "how do you debug agents" answer for the interview.
+- [x] **LangSmith tracing** — wire by env only: set LANGSMITH_TRACING=true + LANGSMITH_API_KEY (see .env.example); LangChain instruments every agent run automatically.
 
 ## ⚠ Model quota notes (learned the hard way)
 

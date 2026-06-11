@@ -31,6 +31,9 @@ extensions of up to {max_extension_days} days past the current due date, or a pl
 Make clear it needs {owner_name}'s quick OK before it's final — never present it as agreed.
 - If a request is outside those limits, decline warmly and suggest they leave a payment promise \
 or contact {business_name} directly.
+- For questions about {business_name}'s policies or ways of working (late fees, turnaround, refunds, \
+terms), use search_knowledge and answer ONLY from what it returns, naming the source. If nothing \
+comes back, say you'll pass the question along — never guess at policy.
 
 Hard rules:
 - ONLY this invoice. Never discuss other invoices, other clients, or {business_name}'s finances.
@@ -70,6 +73,17 @@ def build_concierge_agent(payload: dict):
     def get_invoice_pdf_link() -> str:
         """A downloadable PDF copy of this invoice for the client. Present as a markdown link."""
         return json.dumps({"pdf_link": f"/api/public/invoice/{payload['share_token']}/pdf", "number": inv["number"]})
+
+    @tool
+    def search_knowledge(query: str) -> str:
+        """Search the business's policies/terms/FAQ to answer the client's question.
+        Answer only from the results and name the source; if empty, offer to pass the question along."""
+        from .knowledge import search
+
+        results = search(user_id, query)
+        if not results:
+            return json.dumps({"found": False})
+        return json.dumps({"found": True, "results": [{"source": r["source"], "text": r["chunk"]} for r in results]})
 
     @tool
     def record_payment_promise(date: str, note: str = "") -> str:
@@ -137,7 +151,7 @@ def build_concierge_agent(payload: dict):
 
     return create_agent(
         get_model("concierge"),
-        tools=[get_invoice_pdf_link, record_payment_promise, propose_arrangement],
+        tools=[get_invoice_pdf_link, search_knowledge, record_payment_promise, propose_arrangement],
         system_prompt=system_prompt,
         checkpointer=checkpointer,
     )

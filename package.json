@@ -13,6 +13,7 @@
     "dev:ai": "cd ai && .venv/bin/uvicorn app.main:app --reload --port 8400",
     "build": "npm run build -w web",
     "seed": "npm run seed -w api",
+    "test": "node tests/e2e.mjs",
     "start": "npm start -w api"
   },
   "devDependencies": {

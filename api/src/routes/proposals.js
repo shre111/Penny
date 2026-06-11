@@ -10,6 +10,7 @@ proposalsRouter.use(requireUserOrService)
 proposalsRouter.get('/', async (req, res) => {
   const filter = { userId: req.userId }
   if (req.query.status) filter.status = req.query.status
+  if (req.query.invoiceId) filter.invoiceId = req.query.invoiceId
   const proposals = await Proposal.find(filter)
     .sort({ createdAt: -1 })
     .limit(30)

@@ -37,3 +37,4 @@ npm run build      # builds web/dist (Express serves it in prod = single origin)
 - Browser checks: Playwright scripts in `.data/shot*.mjs` (uses installed Chrome via `channel:'chrome'`); screenshots → `.data/shots/`.
 - Socket events: `.data/socket_test.mjs` listens while you trigger a mutation.
 - The context-retention acceptance test: "My name is David" … "What is my name?" in one session → must answer David.
+- **`npm test`** runs the 26-assertion E2E eval suite against a running stack (use PENNY_MODEL=scripted).

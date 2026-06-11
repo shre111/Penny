@@ -15,6 +15,7 @@ emailsRouter.use(requireUserOrService)
 emailsRouter.get('/', async (req, res) => {
   const filter = { userId: req.userId }
   if (req.query.status) filter.status = req.query.status
+  if (req.query.invoiceId) filter.invoiceId = req.query.invoiceId
   const emails = await Email.find(filter).sort({ createdAt: -1 }).limit(50).lean()
   res.json({ emails })
 })

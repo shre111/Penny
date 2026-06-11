@@ -26,6 +26,23 @@ export async function runOvernightForUser(userId) {
   return resp.json() // { queued, skipped }
 }
 
+export async function runDigestForUser(userId) {
+  const user = await User.findById(userId)
+  if (!user?.email) throw new Error('no owner email')
+  const resp = await fetch(`${config.aiUrl}/digest`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Service-Token': config.serviceToken },
+    body: JSON.stringify({
+      user_id: String(userId),
+      user_name: user.name || '',
+      business_name: user.businessName || '',
+      owner_email: user.email,
+    }),
+  })
+  if (!resp.ok) throw new Error(`AI digest ${resp.status}`)
+  return resp.json()
+}
+
 export function startOvernightSchedule() {
   cron.schedule('0 6 * * *', async () => {
     try {
@@ -44,6 +61,23 @@ export function startOvernightSchedule() {
     }
   })
   console.log('[overnight] scheduled daily at 06:00')
+
+  // Sunday 18:00: the weekly owner digest
+  cron.schedule('0 18 * * 0', async () => {
+    try {
+      const userIds = await Invoice.distinct('userId')
+      console.log(`[digest] weekly run for ${userIds.length} business(es)`)
+      for (const userId of userIds) {
+        try {
+          await runDigestForUser(userId)
+        } catch (err) {
+          console.error(`[digest] user ${userId}:`, err.message)
+        }
+      }
+    } catch (err) {
+      console.error('[digest] weekly run failed:', err.message)
+    }
+  })
 
   // earned-autonomy sends: fire scheduled reminders whose cancel window passed
   cron.schedule('* * * * *', async () => {

@@ -285,6 +285,11 @@ class ScriptedModel(BaseChatModel):
 
         if isinstance(last, ToolMessage):
             result = self._tool_result(last)
+            if last.name == "search_knowledge":
+                if result.get("found"):
+                    r = result["results"][0]
+                    return AIMessage(f"According to {r['source']}: {r['text'][:220]}")
+                return AIMessage("I don't have that written down — I'll pass your question along to the owner.")
             if result.get("error"):
                 return AIMessage(f"I'm sorry — I can't set that up myself ({result['error']}). You could leave me a payment date instead, and I'll pass it along.")
             if last.name == "record_payment_promise":
@@ -295,6 +300,8 @@ class ScriptedModel(BaseChatModel):
                 return AIMessage(f"Of course — [download the PDF here]({result.get('pdf_link')}).")
             return AIMessage("All set.")
 
+        if any(k in h for k in ("late fee", "policy", "policies", "terms", "refund", "rush", "turnaround", "charge")):
+            return AIMessage("Let me check…", tool_calls=[_tc("search_knowledge", {"query": human})])
         if "pdf" in h or "copy" in h or "download" in h:
             return AIMessage("One moment…", tool_calls=[_tc("get_invoice_pdf_link", {})])
         if "split" in h or "installment" in h or "instalment" in h or "two payments" in h or "half now" in h:
