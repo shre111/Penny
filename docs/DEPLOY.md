@@ -67,6 +67,22 @@ MONGODB_URI='mongodb+srv://…/penny?…' node api/src/seed.js
 
 Free services sleep after 15 idle minutes (~1 min cold start). Add a free [UptimeRobot](https://uptimerobot.com) HTTP monitor on **both** `/api/health` and `/health` URLs at 10-minute intervals during the review window. (Free tier = 750 instance-hrs/month per service — two always-on services fit one month exactly; pause the monitors after the process concludes.)
 
+## Variant: frontend on Vercel, backends on Render
+
+The default deploy serves the SPA from Express (one URL, simplest). If you want the frontend on Vercel instead, the repo is already prepared — [web/vercel.json](../web/vercel.json) proxies the API through Vercel's edge so **cookies stay first-party** (a direct cross-origin call would make the auth cookie third-party, which Safari/iOS block).
+
+1. Do the Render + Atlas deploy first (steps 2–4 above) — both Render services stay exactly as they are; the Render URL keeps working as a full-stack fallback.
+2. **Edit [web/vercel.json](../web/vercel.json)**: replace `penny-app.onrender.com` (both rewrites) with your *actual* Render API service URL. Commit + push.
+3. [vercel.com](https://vercel.com) → **Add New → Project** → import the GitHub repo → **Root Directory: `web`** → Framework preset: Vite (build `npm run build`, output `dist` — auto-detected). No environment variables needed — the frontend has none; everything secret lives on Render.
+4. Deploy → you get `https://<project>.vercel.app`.
+5. **Google OAuth**: add the Vercel domain to *Authorized JavaScript origins* in the Google console (alongside the Render one).
+6. Smoke-test ON the Vercel URL: login (cookie should persist after refresh), chat streaming, a live dashboard pop, and a public invoice link.
+
+Trade-offs to know (also worth saying in the interview):
+- **WebSockets don't upgrade through Vercel rewrites** — Socket.IO detects this and stays on HTTP long-polling automatically. Live updates still work, just with marginally higher latency.
+- Chat streaming (SSE) passes through Vercel's proxy; if you ever see responses arrive all-at-once instead of token-by-token on the Vercel domain, that's edge buffering — the Render URL always streams perfectly, so record the demo against whichever behaves best.
+- Two domains exist after this (Vercel + Render). Pick ONE as the canonical link for the submission form — the Vercel one if it smoke-tests clean.
+
 ## 7. Google OAuth (when ready)
 
 [console.cloud.google.com](https://console.cloud.google.com) → APIs & Services:

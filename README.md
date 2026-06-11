@@ -106,6 +106,7 @@ Open http://localhost:5173 — sign in with the demo account, or sign up and cli
 2. Render → **New → Blueprint** → point at this repo (`render.yaml` defines both services).
 3. Fill the env vars Render asks for (Atlas URI ×2, the same `SERVICE_TOKEN` in both services, `GOOGLE_API_KEY`; optionally `GOOGLE_CLIENT_ID`, `COMPOSIO_API_KEY`).
 4. Free instances sleep after 15 idle minutes — first hit takes ~1 min to wake. Keep-alive pings (UptimeRobot) help during review windows.
+5. Prefer the frontend on **Vercel**? `web/vercel.json` is ready — see the variant in [docs/DEPLOY.md](docs/DEPLOY.md): Vercel proxies `/api` to Render so cookies stay first-party; root directory `web`, no env vars needed.
 
 ## Decisions worth explaining
 
