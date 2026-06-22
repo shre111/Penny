@@ -11,6 +11,7 @@ import { ActivityFeed } from './ActivityFeed'
 import { ConciergeSettings } from './ConciergeSettings'
 import { TrustCard } from './TrustCard'
 import { KnowledgeCard } from './KnowledgeCard'
+import { ImportCard } from './ImportCard'
 
 type Tab = 'overview' | 'invoices' | 'clients' | 'outbox' | 'activity'
 
@@ -113,7 +114,12 @@ export function Dashboard() {
           <InvoiceTable invoices={invoices.data.invoices} highlights={invoices.highlights} />
         </div>
       )}
-      {tab === 'clients' && <ClientsTable clients={clients.data?.clients || []} highlights={clients.highlights} />}
+      {tab === 'clients' && (
+        <div className="space-y-4">
+          <ImportCard />
+          <ClientsTable clients={clients.data?.clients || []} highlights={clients.highlights} />
+        </div>
+      )}
       {tab === 'outbox' && (
         <div className="space-y-4">
           <TrustCard />
