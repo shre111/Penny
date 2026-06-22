@@ -34,7 +34,7 @@ Goal: go past the basics before the M32 deadline (~June 12, 2026). Ranked by imp
 - [x] **Invoice drawer** — click any row: full story (amounts, plan, promise, reminders, client requests, history) + actions
 - [x] **Eval suite** — `npm test`: 26 assertions over the real stack on the scripted model (auth, tools, HITL, concierge, guardian, trust gates)
 - [x] **PWA + polish** — installable manifest/icons, skeleton loaders, aria-live streaming region
-- [ ] **9. CSV import** (~1–2h) — bulk-load clients/invoices; useful for reviewers with their own data.
+- [x] **9. CSV import** — bulk-load clients/invoices from a CSV (`POST /api/import/clients`, `POST /api/import/invoices`; quote-aware parser, header aliases, auto-creates unknown clients on invoice import, skips duplicates). "Import from CSV" card with downloadable templates on the Clients tab; imported rows emit a `reloaded` event so the dashboard refreshes live.
 - [x] **LangSmith tracing** — wire by env only: set LANGSMITH_TRACING=true + LANGSMITH_API_KEY (see .env.example); LangChain instruments every agent run automatically.
 
 ## ⚠ Model quota notes (learned the hard way)
