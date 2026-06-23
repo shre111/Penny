@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import crypto from 'node:crypto'
+import bcrypt from 'bcryptjs'
 import { Invoice, nextInvoiceNumber } from '../models/Invoice.js'
 import { Client } from '../models/Client.js'
 import { requireUserOrService } from '../auth/middleware.js'
@@ -10,6 +11,8 @@ invoicesRouter.use(requireUserOrService)
 
 function serialize(inv) {
   const o = inv.toObject({ virtuals: true })
+  delete o.sharePinHash // never expose the PIN hash, even to the owner's client
+  o.sharePinProtected = Boolean(inv.sharePinHash)
   return o
 }
 
@@ -112,15 +115,36 @@ invoicesRouter.post('/:id/payments', async (req, res) => {
   res.json({ invoice: serialize(invoice) })
 })
 
-// Mint (or return) the public share link for the client-facing concierge page
+// Mint (or return) the public share link for the client-facing concierge page.
+// Optional `pin` (4–8 digits): set it to require a PIN, '' to remove it.
 invoicesRouter.post('/:id/share', async (req, res) => {
   const invoice = await Invoice.findOne({ _id: req.params.id, userId: req.userId })
   if (!invoice) return res.status(404).json({ error: 'Invoice not found' })
+
+  let changed = false
   if (!invoice.shareToken) {
     invoice.shareToken = crypto.randomBytes(18).toString('base64url')
-    await invoice.save()
+    changed = true
   }
-  res.json({ url: `/invoice/${invoice.shareToken}`, token: invoice.shareToken })
+
+  const { pin } = req.body || {}
+  if (typeof pin === 'string') {
+    const trimmed = pin.trim()
+    if (trimmed === '') {
+      if (invoice.sharePinHash) {
+        invoice.sharePinHash = undefined
+        changed = true
+      }
+    } else if (!/^\d{4,8}$/.test(trimmed)) {
+      return res.status(400).json({ error: 'PIN must be 4 to 8 digits' })
+    } else {
+      invoice.sharePinHash = await bcrypt.hash(trimmed, 10)
+      changed = true
+    }
+  }
+
+  if (changed) await invoice.save()
+  res.json({ url: `/invoice/${invoice.shareToken}`, token: invoice.shareToken, pinProtected: Boolean(invoice.sharePinHash) })
 })
 
 // The client's payment promise (recorded by the concierge on their behalf)

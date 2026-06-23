@@ -36,6 +36,7 @@ const invoiceSchema = new mongoose.Schema(
     lastReminderAt: { type: Date },
     // client concierge: public share link + the client's payment promise
     shareToken: { type: String, index: true },
+    sharePinHash: { type: String }, // optional bcrypt PIN gating the public link
     promisedDate: { type: Date },
     promiseNote: { type: String },
     promisedAt: { type: Date },

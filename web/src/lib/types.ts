@@ -49,6 +49,7 @@ export interface Invoice {
   promiseNote?: string
   installmentPlan?: { amount: number; date: string }[] | null
   shareToken?: string
+  sharePinProtected?: boolean
 }
 
 export interface Proposal {

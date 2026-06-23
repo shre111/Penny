@@ -129,15 +129,16 @@ The Express relay forwards bytes untouched (latency) while parsing a copy (persi
 - Defense-in-depth on top of the `SameSite=Lax` cookie: an Origin/Referer CSRF guard rejects cross-site state-changing requests (exempting service-token and non-browser callers), and baseline security headers (HSTS in prod, `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, no `X-Powered-By`) — `api/src/security.js`.
 - Service-to-service shared secret; AI never holds DB write access of its own.
 - Public surface = three tokenized endpoints; tokens are 144-bit random; chat is rate-limited per token; the concierge agent's prompt contains a single invoice and guardrails are enforced in code, not prose.
+- Optional per-invoice PIN on the share link: the owner can gate a public invoice with a 4–8 digit PIN (bcrypt-hashed, never returned to the client); view/PDF/chat all require it, with a per-token wrong-attempt lockout (5 / 15 min) so a short PIN can't be brute-forced. Backward-compatible — links without a PIN behave as before.
 - Secrets only in env; `.env`, the brief, and OAuth client secrets are gitignored; history scanned for key patterns (CI-able one-liner in DEPLOY.md).
-- Not done (knowingly): a synchronizer-token CSRF scheme (the Origin check + SameSite=Lax cover the common cases), password reset & email verification (no transactional email provider — owner mail goes through their own Gmail), per-recipient concierge PINs (share link is bearer auth), per-user encryption at rest.
+- Not done (knowingly): a synchronizer-token CSRF scheme (the Origin check + SameSite=Lax cover the common cases), password reset & email verification (no transactional email provider — owner mail goes through their own Gmail), per-user encryption at rest.
 
 ## 8. Honest limitations
 
 - **Free-tier physics**: Gemini RPM/RPD limits (the UI surfaces a friendly wait message); Render free instances cold-start ~1 min after 15 min idle.
 - **Forecast is arithmetic, not ML** — by design (explainability), but it needs ≥2 paid invoices per client to say anything, and it ignores seasonality/amount-dependence.
 - **Single currency display** (USD formatting); no recurring-invoice engine (the guardian *notices* missing retainers; it doesn't generate them).
-- **Concierge identity**: the share link is bearer auth — anyone with the URL is "the client". Fine for v1 (same trust model as e-sign links); per-recipient PINs would be next.
+- **Concierge identity**: the share link is bearer auth by default — anyone with the URL is "the client" (same trust model as e-sign links). The owner can now add an optional per-invoice PIN for a second factor; true per-recipient identity (one PIN/link per contact) would be next.
 - **In-memory rate limiting** resets on restart and isn't shared across instances (single-instance assumption).
 - **Hands-free mode** depends on browser speech APIs (Chrome/Edge/Safari); interim transcripts can mis-trigger in noisy rooms.
 - **Agent routing** is probabilistic: the supervisor occasionally picks the Analyst where the Bookkeeper would do (answers stay correct — tools are shared truths); HITL + undo are the safety nets for the rest.
