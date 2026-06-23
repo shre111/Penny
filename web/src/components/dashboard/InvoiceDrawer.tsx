@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BellRing, FileDown, Link2, MessageCircle, X } from 'lucide-react'
+import { BellRing, FileDown, Link2, Lock, MessageCircle, X } from 'lucide-react'
 import { api } from '../../lib/api'
 import { askPenny } from '../../lib/askPenny'
 import { dueLabel, fmtDate, fmtMoney, STATUS_LABELS, STATUS_STYLES } from '../../lib/format'
@@ -11,6 +11,37 @@ export function InvoiceDrawer({ invoice, onClose }: { invoice: Invoice; onClose:
   const [emails, setEmails] = useState<EmailRecord[] | null>(null)
   const [proposals, setProposals] = useState<Proposal[] | null>(null)
   const [activities, setActivities] = useState<any[] | null>(null)
+  const [shareOpen, setShareOpen] = useState(false)
+  const [sharePin, setSharePin] = useState('')
+  const [shareMsg, setShareMsg] = useState('')
+  const [sharing, setSharing] = useState(false)
+  const [pinProtected, setPinProtected] = useState(Boolean(invoice.sharePinProtected))
+
+  const share = async (pin?: string) => {
+    setSharing(true)
+    setShareMsg('')
+    try {
+      const r = await api<{ url: string; pinProtected: boolean }>(`/api/invoices/${invoice._id}/share`, {
+        method: 'POST',
+        json: pin === undefined ? {} : { pin },
+      })
+      setPinProtected(r.pinProtected)
+      if (pin === '') {
+        setShareMsg('PIN removed.')
+        return
+      }
+      await navigator.clipboard.writeText(`${window.location.origin}${r.url}`).catch(() => {})
+      setShareMsg(
+        r.pinProtected
+          ? 'Link copied — PIN-protected. Share the PIN with your client separately.'
+          : 'Link copied to clipboard.'
+      )
+    } catch (e: any) {
+      setShareMsg(e?.message || 'Could not create the link')
+    } finally {
+      setSharing(false)
+    }
+  }
 
   useEffect(() => {
     api<{ emails: EmailRecord[] }>(`/api/emails?invoiceId=${invoice._id}`).then((d) => setEmails(d.emails)).catch(() => setEmails([]))
@@ -98,16 +129,40 @@ export function InvoiceDrawer({ invoice, onClose }: { invoice: Invoice; onClose:
             <a className="btn-ghost text-xs py-1.5" href={`/api/invoices/${invoice._id}/pdf`} target="_blank" rel="noreferrer">
               <FileDown className="h-3.5 w-3.5" /> PDF
             </a>
-            <button
-              className="btn-ghost text-xs py-1.5"
-              onClick={async () => {
-                const r = await api<{ url: string }>(`/api/invoices/${invoice._id}/share`, { method: 'POST' })
-                await navigator.clipboard.writeText(`${window.location.origin}${r.url}`).catch(() => {})
-              }}
-            >
-              <Link2 className="h-3.5 w-3.5" /> Copy client link
+            <button className="btn-ghost text-xs py-1.5" onClick={() => setShareOpen((o) => !o)}>
+              <Link2 className="h-3.5 w-3.5" /> Client link
+              {pinProtected && <Lock className="h-3 w-3 text-copper-600" />}
             </button>
           </div>
+
+          {shareOpen && (
+            <div className="rounded-xl border border-line/60 p-3 space-y-2.5">
+              <p className="text-xs text-ink-soft">
+                Share a private link to this invoice. Add an optional PIN for a second layer — your client enters it
+                to open the page.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  className="input py-1.5 text-sm flex-1"
+                  inputMode="numeric"
+                  maxLength={8}
+                  placeholder="Optional PIN (4–8 digits)"
+                  value={sharePin}
+                  onChange={(e) => setSharePin(e.target.value.replace(/\D/g, ''))}
+                  aria-label="Optional PIN"
+                />
+                <button className="btn-primary text-sm py-1.5" onClick={() => share(sharePin)} disabled={sharing}>
+                  {sharing ? <Spinner /> : 'Copy link'}
+                </button>
+              </div>
+              {pinProtected && (
+                <button className="text-xs text-ink-soft hover:text-danger-500 cursor-pointer" onClick={() => share('')} disabled={sharing}>
+                  Remove PIN protection
+                </button>
+              )}
+              {shareMsg && <p className="text-xs font-medium text-brand-700">{shareMsg}</p>}
+            </div>
+          )}
 
           <Section title="Reminders & emails" empty="No emails about this invoice yet" items={emails} render={(e: EmailRecord) => (
             <li key={e._id} className="py-2">

@@ -3,7 +3,6 @@ import { useParams } from 'react-router-dom'
 import { FileDown, SendHorizonal } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { api } from '../lib/api'
 import { dueLabel, fmtDate, fmtMoney, STATUS_LABELS, STATUS_STYLES } from '../lib/format'
 import { CoinMark, Spinner, Wordmark } from '../components/ui'
 import type { ActivityEvent } from '../lib/types'
@@ -51,14 +50,44 @@ export default function PublicInvoice() {
   const [streaming, setStreaming] = useState<ConciergeMessage | null>(null)
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
+  const [pinRequired, setPinRequired] = useState(false)
+  const [pinInput, setPinInput] = useState('')
+  const [pinError, setPinError] = useState('')
+  const pinRef = useRef<string>(sessionStorage.getItem(`penny:pin:${token}`) || '')
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const refreshInvoice = () => {
-    api<{ invoice: PublicInvoiceData }>(`/api/public/invoice/${token}`)
-      .then((d) => setInvoice(d.invoice))
+    fetch(`/api/public/invoice/${token}`, {
+      headers: pinRef.current ? { 'x-invoice-pin': pinRef.current } : undefined,
+    })
+      .then(async (res) => {
+        if (res.status === 404) return setNotFound(true)
+        if (res.status === 401 || res.status === 429) {
+          const d = await res.json().catch(() => ({}))
+          setInvoice(null)
+          setPinRequired(true)
+          if (pinRef.current || res.status === 429) setPinError(d.error || 'That PIN is not correct')
+          return
+        }
+        if (!res.ok) return setNotFound(true)
+        const d = await res.json()
+        setInvoice(d.invoice)
+        setPinRequired(false)
+        setPinError('')
+      })
       .catch(() => setNotFound(true))
   }
-  useEffect(refreshInvoice, [token]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(refreshInvoice, [token])
+
+  const submitPin = (e: React.FormEvent) => {
+    e.preventDefault()
+    const v = pinInput.trim()
+    if (!v) return
+    pinRef.current = v
+    sessionStorage.setItem(`penny:pin:${token}`, v)
+    setPinError('')
+    refreshInvoice()
+  }
 
   useEffect(() => {
     const el = scrollRef.current
@@ -76,8 +105,8 @@ export default function PublicInvoice() {
     try {
       const res = await fetch(`/api/public/invoice/${token}/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content, visitorId: visitorId() }),
+        headers: { 'Content-Type': 'application/json', ...(pinRef.current ? { 'x-invoice-pin': pinRef.current } : {}) },
+        body: JSON.stringify({ content, visitorId: visitorId(), pin: pinRef.current || undefined }),
       })
       if (!res.ok || !res.body) {
         const err = await res.json().catch(() => null)
@@ -131,6 +160,33 @@ export default function PublicInvoice() {
       </div>
     )
   }
+  if (pinRequired && !invoice) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-6">
+        <CoinMark size={44} />
+        <div className="card p-6 w-full max-w-sm text-center">
+          <h1 className="font-display text-xl mb-1">This invoice is protected</h1>
+          <p className="text-ink-soft text-sm mb-4">Enter the PIN the business shared with you to view it.</p>
+          <form onSubmit={submitPin} className="space-y-3">
+            <input
+              autoFocus
+              inputMode="numeric"
+              maxLength={8}
+              className="input text-center tracking-[0.4em] text-lg"
+              placeholder="••••"
+              value={pinInput}
+              onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ''))}
+              aria-label="Invoice PIN"
+            />
+            {pinError && <p className="text-danger-600 text-sm">{pinError}</p>}
+            <button type="submit" className="btn-primary w-full justify-center" disabled={!pinInput.trim()}>
+              Unlock
+            </button>
+          </form>
+        </div>
+      </div>
+    )
+  }
   if (!invoice) {
     return (
       <div className="min-h-screen flex items-center justify-center text-brand-700">
@@ -143,7 +199,7 @@ export default function PublicInvoice() {
     <div className="min-h-screen bg-paper">
       <header className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
         <p className="font-display font-semibold text-xl">{invoice.businessName}</p>
-        <a className="btn-ghost text-xs py-1.5 px-3" href={`/api/public/invoice/${token}/pdf`} target="_blank" rel="noreferrer">
+        <a className="btn-ghost text-xs py-1.5 px-3" href={`/api/public/invoice/${token}/pdf${pinRef.current ? `?pin=${encodeURIComponent(pinRef.current)}` : ''}`} target="_blank" rel="noreferrer">
           <FileDown className="h-3.5 w-3.5" /> Download PDF
         </a>
       </header>

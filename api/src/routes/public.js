@@ -1,8 +1,10 @@
 import { Router } from 'express'
+import bcrypt from 'bcryptjs'
 import { Invoice } from '../models/Invoice.js'
 import { User } from '../models/User.js'
 import { renderInvoicePdf } from './invoicePdf.js'
 import { config } from '../config.js'
+import { isLockedOut, recordFailure, clearFailures } from '../rateLimit.js'
 
 /**
  * The public face of an invoice — no login, the share token IS the auth.
@@ -33,6 +35,28 @@ async function loadByToken(token) {
   return { invoice, owner }
 }
 
+/**
+ * If the invoice link is PIN-protected, require a matching PIN (sent as the
+ * `x-invoice-pin` header or `?pin=` / body `pin`). Returns null when access is
+ * allowed, or a { status, body } to send back. Wrong attempts are throttled per
+ * token (5 / 15 min) so a short numeric PIN can't be brute-forced.
+ */
+async function pinGate(invoice, token, provided) {
+  if (!invoice.sharePinHash) return null
+  const key = `pin:${token}`
+  if (isLockedOut(key)) {
+    return { status: 429, body: { pinRequired: true, error: 'Too many incorrect PINs — please wait a few minutes.' } }
+  }
+  if (provided && (await bcrypt.compare(String(provided), invoice.sharePinHash))) {
+    clearFailures(key)
+    return null
+  }
+  if (provided) recordFailure(key) // only count actual wrong guesses, not the first prompt
+  return { status: 401, body: { pinRequired: true, error: provided ? 'That PIN is not correct' : undefined } }
+}
+
+const readPin = (req) => req.get('x-invoice-pin') || req.query.pin || (req.body && req.body.pin)
+
 function publicView(invoice, owner) {
   const inv = invoice.toObject({ virtuals: true })
   return {
@@ -57,12 +81,16 @@ function publicView(invoice, owner) {
 publicRouter.get('/invoice/:token', async (req, res) => {
   const found = await loadByToken(req.params.token)
   if (!found) return res.status(404).json({ error: 'This invoice link is not valid' })
+  const gate = await pinGate(found.invoice, req.params.token, readPin(req))
+  if (gate) return res.status(gate.status).json(gate.body)
   res.json({ invoice: publicView(found.invoice, found.owner) })
 })
 
 publicRouter.get('/invoice/:token/pdf', async (req, res) => {
   const found = await loadByToken(req.params.token)
   if (!found) return res.status(404).json({ error: 'This invoice link is not valid' })
+  const gate = await pinGate(found.invoice, req.params.token, readPin(req))
+  if (gate) return res.status(gate.status).json(gate.body)
   renderInvoicePdf(found.invoice, found.owner, res)
 })
 
@@ -73,6 +101,8 @@ publicRouter.post('/invoice/:token/chat', async (req, res) => {
   const found = await loadByToken(req.params.token)
   if (!found) return res.status(404).json({ error: 'This invoice link is not valid' })
   const { invoice, owner } = found
+  const gate = await pinGate(invoice, req.params.token, readPin(req))
+  if (gate) return res.status(gate.status).json(gate.body)
   if (!(owner?.concierge?.enabled ?? true)) {
     return res.status(403).json({ error: 'Chat is not available on this invoice' })
   }
