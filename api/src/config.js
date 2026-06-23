@@ -24,4 +24,16 @@ export const config = {
   serviceToken: required('SERVICE_TOKEN', 'dev-service-token'),
   googleClientId: process.env.GOOGLE_CLIENT_ID || '',
   isProd: process.env.NODE_ENV === 'production',
+  // Extra browser origins allowed to make state-changing requests (CSRF guard).
+  // Same-origin is always allowed; add cross-origin frontends here (e.g. a
+  // Vercel domain proxying to this API). Comma-separated.
+  allowedOrigins: [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:4001',
+    ...(process.env.ALLOWED_ORIGINS || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean),
+  ],
 }

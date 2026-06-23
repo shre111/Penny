@@ -23,6 +23,7 @@ import { knowledgeRouter } from './routes/knowledge.js'
 import { overnightRouter } from './routes/overnight.js'
 import { invoicePdfHandler } from './routes/invoicePdf.js'
 import { requireAuth } from './auth/middleware.js'
+import { securityHeaders, csrfGuard } from './security.js'
 import { trustStats } from './trust.js'
 import { startOvernightSchedule } from './overnight.js'
 
@@ -31,9 +32,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 await connectDb()
 
 const app = express()
-app.set('trust proxy', 1) // Render sits behind a proxy; needed for secure cookies
+app.set('trust proxy', 1) // Render sits behind a proxy; needed for secure cookies + real req.ip
+app.disable('x-powered-by')
+app.use(securityHeaders)
 app.use(express.json({ limit: '1mb' }))
 app.use(cookieParser())
+app.use(csrfGuard) // reject cross-site state-changing requests (defense-in-depth over SameSite=Lax)
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, service: 'penny-api' }))
 app.use('/api/auth', authRouter)

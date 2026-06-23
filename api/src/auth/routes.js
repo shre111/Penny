@@ -4,11 +4,33 @@ import { OAuth2Client } from 'google-auth-library'
 import { User } from '../models/User.js'
 import { config } from '../config.js'
 import { requireAuth, setAuthCookie, clearAuthCookie } from './middleware.js'
+import { rateLimit, isLockedOut, recordFailure, clearFailures } from '../rateLimit.js'
 
 export const authRouter = Router()
 const googleClient = config.googleClientId ? new OAuth2Client(config.googleClientId) : null
 
-authRouter.post('/signup', async (req, res) => {
+// Throttle the unauthenticated auth endpoints by client IP to stop brute force
+// and mass account creation. (req.ip is the real client — app trusts the proxy.)
+const loginLimiter = rateLimit({
+  max: 20,
+  windowMs: 15 * 60 * 1000,
+  key: (r) => `login:${r.ip}`,
+  message: 'Too many sign-in attempts. Please wait a few minutes and try again.',
+})
+const signupLimiter = rateLimit({
+  max: 10,
+  windowMs: 60 * 60 * 1000,
+  key: (r) => `signup:${r.ip}`,
+  message: 'Too many sign-up attempts. Please wait a little while and try again.',
+})
+const googleLimiter = rateLimit({
+  max: 30,
+  windowMs: 15 * 60 * 1000,
+  key: (r) => `google:${r.ip}`,
+  message: 'Too many attempts. Please wait a moment and try again.',
+})
+
+authRouter.post('/signup', signupLimiter, async (req, res) => {
   const { name, email, password, businessName } = req.body || {}
   if (!name?.trim() || !email?.trim() || !password) {
     return res.status(400).json({ error: 'Name, email and password are required' })
@@ -29,19 +51,27 @@ authRouter.post('/signup', async (req, res) => {
   res.status(201).json({ user: user.toSafeJSON() })
 })
 
-authRouter.post('/login', async (req, res) => {
+authRouter.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body || {}
-  const user = await User.findOne({ email: (email || '').toLowerCase().trim() })
+  const normEmail = (email || '').toLowerCase().trim()
+  if (isLockedOut(normEmail)) {
+    return res
+      .status(429)
+      .json({ error: 'Too many failed attempts for this account. Please wait a few minutes before trying again.' })
+  }
+  const user = await User.findOne({ email: normEmail })
   if (!user || !user.passwordHash || !(await bcrypt.compare(password || '', user.passwordHash))) {
+    recordFailure(normEmail)
     return res.status(401).json({ error: 'Incorrect email or password' })
   }
+  clearFailures(normEmail)
   setAuthCookie(res, user._id)
   res.json({ user: user.toSafeJSON() })
 })
 
 // Google Identity Services: client sends the ID-token credential, we verify it
 // server-side and issue the same first-party session cookie as password login.
-authRouter.post('/google', async (req, res) => {
+authRouter.post('/google', googleLimiter, async (req, res) => {
   if (!googleClient) return res.status(501).json({ error: 'Google sign-in is not configured' })
   const { credential } = req.body || {}
   if (!credential) return res.status(400).json({ error: 'Missing credential' })
