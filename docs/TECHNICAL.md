@@ -125,10 +125,12 @@ The Express relay forwards bytes untouched (latency) while parsing a copy (persi
 ## 7. Security posture
 
 - Passwords bcrypt(10); JWT httpOnly cookie; Google sign-in verified server-side (`verifyIdToken`), no client-trusted identity.
+- Auth endpoints are brute-force-hardened: per-IP rate limits on login/signup/google plus a per-email lockout (5 failures / 15 min) — `api/src/rateLimit.js`.
+- Defense-in-depth on top of the `SameSite=Lax` cookie: an Origin/Referer CSRF guard rejects cross-site state-changing requests (exempting service-token and non-browser callers), and baseline security headers (HSTS in prod, `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, no `X-Powered-By`) — `api/src/security.js`.
 - Service-to-service shared secret; AI never holds DB write access of its own.
 - Public surface = three tokenized endpoints; tokens are 144-bit random; chat is rate-limited per token; the concierge agent's prompt contains a single invoice and guardrails are enforced in code, not prose.
 - Secrets only in env; `.env`, the brief, and OAuth client secrets are gitignored; history scanned for key patterns (CI-able one-liner in DEPLOY.md).
-- Not done (knowingly): CSRF tokens (SameSite=Lax mitigates the common cases), password reset, email verification, per-user encryption at rest.
+- Not done (knowingly): a synchronizer-token CSRF scheme (the Origin check + SameSite=Lax cover the common cases), password reset & email verification (no transactional email provider — owner mail goes through their own Gmail), per-recipient concierge PINs (share link is bearer auth), per-user encryption at rest.
 
 ## 8. Honest limitations
 
