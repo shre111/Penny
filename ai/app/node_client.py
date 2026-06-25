@@ -12,21 +12,19 @@ class NodeAPIError(Exception):
     pass
 
 
-def _client(user_id: str) -> httpx.Client:
-    return httpx.Client(
-        base_url=config.NODE_API_URL,
-        headers={
-            "X-Service-Token": config.SERVICE_TOKEN,
-            "X-User-Id": user_id,
-            "X-Actor": "agent",
-        },
-        timeout=15.0,
-    )
+# One shared client → connection pooling + keep-alive across tool calls, instead
+# of opening (and discarding) a fresh connection on every request. httpx.Client
+# is safe to share across the threadpool that runs the sync agent stream.
+# Per-user identity travels in per-request headers, not on the client.
+_client = httpx.Client(
+    base_url=config.NODE_API_URL,
+    headers={"X-Service-Token": config.SERVICE_TOKEN, "X-Actor": "agent"},
+    timeout=15.0,
+)
 
 
 def request(user_id: str, method: str, path: str, json: dict | None = None, params: dict | None = None) -> dict:
-    with _client(user_id) as client:
-        resp = client.request(method, path, json=json, params=params)
+    resp = _client.request(method, path, json=json, params=params, headers={"X-User-Id": user_id})
     if resp.status_code >= 400:
         try:
             detail = resp.json().get("error", resp.text)
