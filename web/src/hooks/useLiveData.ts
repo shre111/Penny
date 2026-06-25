@@ -28,24 +28,28 @@ export function useLiveData<T>(path: string, entities: string[]) {
 
   useEffect(() => {
     const socket = getSocket()
+    const timers = new Set<ReturnType<typeof setTimeout>>()
     const onChange = (change: EntityChange) => {
       if (!entitiesRef.current.includes(change.entity)) return
       refetch()
       if (change.actor === 'agent' && change.id) {
         const id = String(change.id)
         setHighlights((prev) => new Set(prev).add(id))
-        setTimeout(() => {
+        const t = setTimeout(() => {
+          timers.delete(t)
           setHighlights((prev) => {
             const next = new Set(prev)
             next.delete(id)
             return next
           })
         }, 3000)
+        timers.add(t)
       }
     }
     socket.on('entity:changed', onChange)
     return () => {
       socket.off('entity:changed', onChange)
+      timers.forEach(clearTimeout) // don't fire setState after unmount
     }
   }, [refetch])
 
