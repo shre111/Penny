@@ -39,6 +39,18 @@ invoicesRouter.get('/', async (req, res) => {
   res.json({ invoices })
 })
 
+// Look up a single invoice by its human number (e.g. INV-0042). Direct,
+// case-insensitive lookup — avoids fetching and scanning the whole list, and
+// works regardless of how many invoices the account has. Declared before
+// '/:id' so the literal path wins over the id param.
+invoicesRouter.get('/by-number/:number', async (req, res) => {
+  const invoice = await Invoice.findOne({ userId: req.userId, number: req.params.number.trim() })
+    .collation({ locale: 'en', strength: 2 }) // case-insensitive exact match
+    .populate('clientId', 'name email contactName')
+  if (!invoice) return res.status(404).json({ error: `No invoice found with number ${req.params.number}` })
+  res.json({ invoice: serialize(invoice) })
+})
+
 invoicesRouter.get('/:id', async (req, res) => {
   const invoice = await Invoice.findOne({ _id: req.params.id, userId: req.userId }).populate(
     'clientId',
