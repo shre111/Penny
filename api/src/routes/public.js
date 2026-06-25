@@ -27,6 +27,13 @@ function allow(token, limit = 30, windowMs = 60 * 60 * 1000) {
   return b.count <= limit
 }
 
+// Evict expired buckets so the map doesn't accumulate one entry per shared
+// invoice token for the life of the process. unref so it never blocks exit.
+setInterval(() => {
+  const now = Date.now()
+  for (const [token, b] of buckets) if (now > b.resetAt) buckets.delete(token)
+}, 30 * 60 * 1000).unref()
+
 async function loadByToken(token) {
   if (!token || token.length < 10) return null
   const invoice = await Invoice.findOne({ shareToken: token }).populate('clientId', 'name contactName')
