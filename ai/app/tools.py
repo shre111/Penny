@@ -94,11 +94,10 @@ def build_tools(user_id: str) -> list:
         return json.dumps({"updated": _compact_invoice(data["invoice"])})
 
     def _find_invoice(invoice_number: str) -> dict:
-        data = request(user_id, "GET", "/api/invoices", params={"status": "all", "limit": 200})
-        for i in data["invoices"]:
-            if i.get("number", "").lower() == invoice_number.lower().strip():
-                return _compact_invoice(i)
-        raise NodeAPIError(f"No invoice found with number {invoice_number}")
+        # Direct lookup by number — no list scan, no 200-row cap. Raises
+        # NodeAPIError (404 from Node) if there's no match.
+        data = request(user_id, "GET", f"/api/invoices/by-number/{invoice_number.strip()}")
+        return _compact_invoice(data["invoice"])
 
     @tool
     def list_clients(search: str = "") -> str:
