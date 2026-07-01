@@ -13,6 +13,10 @@ const upload = multer({
 export const importsRouter = Router()
 importsRouter.use(requireAuth)
 
+// Cap rows per import so one file can't create tens of thousands of records
+// synchronously (each invoice also costs a DB round-trip for its number).
+const MAX_ROWS = 1000
+
 /**
  * Bulk import clients/invoices from a CSV (e.g. an export from another tool).
  * Each created row still flows through the same models the UI/agent use; a
@@ -112,6 +116,8 @@ importsRouter.post('/clients', upload.single('file'), async (req, res) => {
   const text = readCsvOrThrow(req)
   const { records } = toRecords(text)
   if (!records.length) return res.status(400).json({ error: 'No rows found. Is the file empty or missing a header row?' })
+  if (records.length > MAX_ROWS)
+    return res.status(413).json({ error: `Too many rows (${records.length}). Please split into files of ${MAX_ROWS} or fewer.` })
 
   // existing names (lowercased) so we skip duplicates without a query per row
   const existing = await Client.find({ userId: req.userId }).select('name').lean()
@@ -152,6 +158,8 @@ importsRouter.post('/invoices', upload.single('file'), async (req, res) => {
   const text = readCsvOrThrow(req)
   const { records } = toRecords(text)
   if (!records.length) return res.status(400).json({ error: 'No rows found. Is the file empty or missing a header row?' })
+  if (records.length > MAX_ROWS)
+    return res.status(413).json({ error: `Too many rows (${records.length}). Please split into files of ${MAX_ROWS} or fewer.` })
 
   // cache clients by lowercased name; auto-create missing ones on the fly
   const existing = await Client.find({ userId: req.userId }).select('name').lean()
