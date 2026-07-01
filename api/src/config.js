@@ -20,7 +20,7 @@ export const config = {
   port: Number(process.env.PORT || 4001),
   mongoUri: required('MONGODB_URI', 'mongodb://127.0.0.1:27017/penny'),
   jwtSecret: required('JWT_SECRET', 'dev-only-secret-change-me'),
-  aiUrl: process.env.AI_URL || 'http://localhost:8000',
+  aiUrl: process.env.AI_URL || 'http://localhost:8400', // AI service runs on 8400; 8000 is squatted by a local Chroma container
   serviceToken: required('SERVICE_TOKEN', 'dev-service-token'),
   googleClientId: process.env.GOOGLE_CLIENT_ID || '',
   isProd: process.env.NODE_ENV === 'production',
