@@ -49,11 +49,15 @@ const invoiceSchema = new mongoose.Schema(
 invoiceSchema.index({ userId: 1, number: 1 }, { unique: true })
 invoiceSchema.index({ userId: 1, status: 1, dueDate: 1 })
 
+// Round to whole cents so float drift (e.g. 0.1 + 0.2) can't leave a sub-cent
+// phantom balance that stops an invoice from ever reading as fully paid.
+const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100
+
 invoiceSchema.virtual('amountPaid').get(function () {
-  return (this.payments || []).reduce((s, p) => s + p.amount, 0)
+  return round2((this.payments || []).reduce((s, p) => s + p.amount, 0))
 })
 invoiceSchema.virtual('balance').get(function () {
-  return Math.max(0, this.amount - this.amountPaid)
+  return Math.max(0, round2(this.amount - this.amountPaid))
 })
 invoiceSchema.virtual('effectiveStatus').get(function () {
   if (this.status === 'sent' && this.balance > 0 && this.dueDate < new Date()) return 'overdue'
