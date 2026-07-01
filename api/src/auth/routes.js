@@ -77,7 +77,14 @@ authRouter.post('/google', googleLimiter, async (req, res) => {
   if (!credential) return res.status(400).json({ error: 'Missing credential' })
   try {
     const ticket = await googleClient.verifyIdToken({ idToken: credential, audience: config.googleClientId })
-    const { sub, email, name, picture } = ticket.getPayload()
+    const payload = ticket.getPayload()
+    // Only trust the email (for matching/creating an account) if Google says it's
+    // verified — otherwise a token bearing an unverified address could link to or
+    // hijack an existing email/password account.
+    if (!payload.email_verified) {
+      return res.status(401).json({ error: 'Your Google email address is not verified' })
+    }
+    const { sub, email, name, picture } = payload
     let user = await User.findOne({ $or: [{ googleId: sub }, { email }] })
     if (!user) {
       user = await User.create({ email, name: name || email.split('@')[0], googleId: sub, avatarUrl: picture || '' })
