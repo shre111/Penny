@@ -60,7 +60,7 @@ export function ChartCard({ data }: { data: { kind: string; title: string; data:
         <BarChart data={data.data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={c.grid} vertical={false} />
           <XAxis dataKey="name" tick={{ fontSize: 10.5, fill: c.tick }} axisLine={false} tickLine={false} interval={0} />
-          <YAxis tickFormatter={(v) => `$${v >= 1000 ? `${v / 1000}k` : v}`} tick={{ fontSize: 10.5, fill: c.tick }} axisLine={false} tickLine={false} width={42} />
+          <YAxis tickFormatter={(v) => `$${v >= 1000 ? `${(v / 1000).toFixed(1).replace(/\.0$/, '')}k` : v}`} tick={{ fontSize: 10.5, fill: c.tick }} axisLine={false} tickLine={false} width={42} />
           <Tooltip formatter={(v) => fmtMoney(Number(v))} {...tooltip} />
           {data.kind === 'cashflow' ? (
             <>
