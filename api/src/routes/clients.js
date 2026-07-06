@@ -4,6 +4,7 @@ import { Invoice } from '../models/Invoice.js'
 import { requireUserOrService } from '../auth/middleware.js'
 import { emitChange } from '../realtime.js'
 import { paymentBehavior } from './metrics.js'
+import { escapeRegex } from '../util.js'
 
 export const clientsRouter = Router()
 clientsRouter.use(requireUserOrService)
@@ -11,7 +12,7 @@ clientsRouter.use(requireUserOrService)
 clientsRouter.get('/', async (req, res) => {
   const { q } = req.query
   const filter = { userId: req.userId }
-  if (q) filter.name = { $regex: q, $options: 'i' }
+  if (q) filter.name = { $regex: escapeRegex(q), $options: 'i' }
   const [clients, behavior] = await Promise.all([
     Client.find(filter).sort({ name: 1 }).lean(),
     paymentBehavior(req.userId),
