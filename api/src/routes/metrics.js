@@ -133,7 +133,10 @@ metricsRouter.get('/forecast', async (req, res) => {
     if (inv.status !== 'sent' || inv.balance <= 0) continue
     const clientKey = String(inv.clientId?._id || inv.clientId)
     const b = behavior[clientKey]
-    const shiftDays = Math.max(0, b?.avgDaysLate ?? 0)
+    // Only shift by a client's habit once it's confident (>=2 paid invoices → a
+    // label is set). With fewer samples, assume on-time so the shift matches the
+    // "no payment history yet — assuming on time" basis instead of contradicting it.
+    const shiftDays = b?.label ? Math.max(0, b.avgDaysLate) : 0
     let expected = new Date(new Date(inv.dueDate).getTime() + shiftDays * 86400000)
     let basis = b?.label ? `${inv.clientId?.name} ${b.label}` : 'no payment history yet — assuming on time'
     // a client's own promise (made to the concierge) beats any inference
