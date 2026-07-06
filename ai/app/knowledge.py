@@ -5,6 +5,7 @@ cosine over the user's chunks fetched from the Node store — at SMB scale
 (dozens of chunks) that's faster and simpler than a vector database, and the
 swap to Atlas $vectorSearch later is a one-module change.
 """
+import hashlib
 import math
 import os
 
@@ -22,10 +23,18 @@ class _HashEmbedder:
 
     DIM = 256
 
+    @staticmethod
+    def _bucket(token: str) -> int:
+        # Stable across processes. Python's built-in hash() is salted per run
+        # (PYTHONHASHSEED), so using it would put stored doc vectors and a later
+        # query's vector in different buckets after any restart — breaking search.
+        digest = hashlib.blake2b(token.encode("utf-8"), digest_size=8).digest()
+        return int.from_bytes(digest, "big")
+
     def _vec(self, text: str) -> list[float]:
         v = [0.0] * self.DIM
         for token in text.lower().split():
-            v[hash(token) % self.DIM] += 1.0
+            v[self._bucket(token) % self.DIM] += 1.0
         return v
 
     def embed_documents(self, texts):
