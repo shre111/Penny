@@ -5,6 +5,7 @@ import { Invoice, nextInvoiceNumber } from '../models/Invoice.js'
 import { Client } from '../models/Client.js'
 import { requireUserOrService } from '../auth/middleware.js'
 import { emitChange } from '../realtime.js'
+import { escapeRegex } from '../util.js'
 
 export const invoicesRouter = Router()
 invoicesRouter.use(requireUserOrService)
@@ -70,7 +71,7 @@ invoicesRouter.post('/', async (req, res) => {
     client = await Client.findOne({ _id: clientId, userId: req.userId })
     if (!client) return res.status(404).json({ error: 'Client not found' })
   } else if (clientName?.trim()) {
-    client = await Client.findOne({ userId: req.userId, name: { $regex: `^${clientName.trim()}$`, $options: 'i' } })
+    client = await Client.findOne({ userId: req.userId, name: { $regex: `^${escapeRegex(clientName.trim())}$`, $options: 'i' } })
     if (!client) {
       client = await Client.create({ userId: req.userId, name: clientName.trim() })
       emitChange(req.userId, { entity: 'client', action: 'created', id: client._id, actor: req.actor, doc: client })
