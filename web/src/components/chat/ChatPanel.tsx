@@ -175,11 +175,9 @@ export function ChatPanel() {
 
   const deleteSession = async (id: string) => {
     await api(`/api/chat/sessions/${id}`, { method: 'DELETE' })
-    setSessions((prev) => {
-      const next = prev.filter((s) => s._id !== id)
-      if (sessionId === id) setSessionId(next[0]?._id ?? null)
-      return next
-    })
+    const next = sessions.filter((s) => s._id !== id)
+    setSessions(next)
+    if (sessionId === id) setSessionId(next[0]?._id ?? null) // pure updates, no setState inside an updater
   }
 
   const submit = useCallback(
