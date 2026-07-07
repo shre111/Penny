@@ -6,6 +6,10 @@ import { requireUserOrService } from '../auth/middleware.js'
 export const metricsRouter = Router()
 metricsRouter.use(requireUserOrService)
 
+// Round summed money to whole cents so float drift doesn't surface long tails
+// in the KPI cards or the agent's get_business_metrics.
+const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100
+
 // SMB datasets are small; computing in JS keeps balance/overdue logic in one
 // place (the Invoice virtuals) instead of duplicating it in aggregations.
 async function loadInvoices(userId) {
@@ -56,11 +60,11 @@ metricsRouter.get('/summary', async (req, res) => {
 
   res.json({
     summary: {
-      outstandingTotal: open.reduce((s, i) => s + i.balance, 0),
+      outstandingTotal: round2(open.reduce((s, i) => s + i.balance, 0)),
       outstandingCount: open.length,
-      overdueTotal: overdue.reduce((s, i) => s + i.balance, 0),
+      overdueTotal: round2(overdue.reduce((s, i) => s + i.balance, 0)),
       overdueCount: overdue.length,
-      collectedThisMonth,
+      collectedThisMonth: round2(collectedThisMonth),
       invoiceCount: invoices.length,
       clientCount: await Client.countDocuments({ userId: req.userId }),
     },
