@@ -1,7 +1,7 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, Cell } from 'recharts'
 import { Banknote, AlertCircle, PiggyBank, Sparkles, Users } from 'lucide-react'
 import type { Forecast, Summary } from '../../lib/types'
-import { fmtDate, fmtMoney } from '../../lib/format'
+import { fmtAxisMoney, fmtDate, fmtMoney } from '../../lib/format'
 import { useChartColors } from '../../lib/theme'
 
 export function useTooltipStyle() {
@@ -76,7 +76,7 @@ export function AgingChart({ data }: { data: { name: string; value: number }[] }
           <BarChart data={data} margin={{ top: 4, right: 8, left: 8, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={c.grid} vertical={false} />
             <XAxis dataKey="name" tick={{ fontSize: 11, fill: c.tick }} axisLine={false} tickLine={false} interval={0} />
-            <YAxis tickFormatter={(v) => `$${v >= 1000 ? `${v / 1000}k` : v}`} tick={{ fontSize: 11, fill: c.tick }} axisLine={false} tickLine={false} width={44} />
+            <YAxis tickFormatter={fmtAxisMoney} tick={{ fontSize: 11, fill: c.tick }} axisLine={false} tickLine={false} width={44} />
             <Tooltip formatter={(v) => fmtMoney(Number(v))} cursor={{ fill: 'rgba(58,140,97,0.06)' }} {...tooltip} />
             <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={56}>
               {data.map((_, i) => (
@@ -124,7 +124,7 @@ export function ForecastCard({ forecast }: { forecast: Forecast }) {
             <BarChart data={forecast.weeks} margin={{ top: 4, right: 8, left: 8, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={c.grid} vertical={false} />
               <XAxis dataKey="name" tick={{ fontSize: 10.5, fill: c.tick }} axisLine={false} tickLine={false} interval={0} />
-              <YAxis tickFormatter={(v) => `$${v >= 1000 ? `${v / 1000}k` : v}`} tick={{ fontSize: 10.5, fill: c.tick }} axisLine={false} tickLine={false} width={42} />
+              <YAxis tickFormatter={fmtAxisMoney} tick={{ fontSize: 10.5, fill: c.tick }} axisLine={false} tickLine={false} width={42} />
               <Tooltip formatter={(v) => fmtMoney(Number(v))} cursor={{ fill: 'rgba(58,140,97,0.06)' }} {...tooltip} />
               <Bar dataKey="expected" name="Expected" fill="#5ba980" radius={[5, 5, 0, 0]} maxBarSize={34} />
             </BarChart>
@@ -166,7 +166,7 @@ export function CashflowChart({ data }: { data: { name: string; billed: number; 
         <BarChart data={data} margin={{ top: 4, right: 8, left: 8, bottom: 0 }} barGap={3}>
           <CartesianGrid strokeDasharray="3 3" stroke={c.grid} vertical={false} />
           <XAxis dataKey="name" tick={{ fontSize: 11, fill: c.tick }} axisLine={false} tickLine={false} />
-          <YAxis tickFormatter={(v) => `$${v >= 1000 ? `${v / 1000}k` : v}`} tick={{ fontSize: 11, fill: c.tick }} axisLine={false} tickLine={false} width={44} />
+          <YAxis tickFormatter={fmtAxisMoney} tick={{ fontSize: 11, fill: c.tick }} axisLine={false} tickLine={false} width={44} />
           <Tooltip formatter={(v) => fmtMoney(Number(v))} cursor={{ fill: 'rgba(58,140,97,0.06)' }} {...tooltip} />
           <Legend wrapperStyle={{ fontSize: 12 }} />
           <Bar dataKey="billed" name="Billed" fill="#bcdfc9" radius={[5, 5, 0, 0]} maxBarSize={26} />

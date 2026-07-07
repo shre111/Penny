@@ -6,6 +6,12 @@ export function fmtMoney(n: number, currency = 'USD'): string {
   }).format(n)
 }
 
+/** Compact money for chart axis ticks: `$800`, `$1.5k`, `$12.3k` (no long tails). */
+export function fmtAxisMoney(v: number): string {
+  if (v >= 1000) return `$${(v / 1000).toFixed(1).replace(/\.0$/, '')}k`
+  return `$${v}`
+}
+
 export function fmtDate(iso: string | Date): string {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
