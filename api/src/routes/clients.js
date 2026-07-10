@@ -23,7 +23,13 @@ clientsRouter.get('/', async (req, res) => {
 clientsRouter.post('/', async (req, res) => {
   const { name, contactName, email, phone, notes } = req.body || {}
   if (!name?.trim()) return res.status(400).json({ error: 'Client name is required' })
-  const existing = await Client.findOne({ userId: req.userId, name: name.trim() })
+  // Match existing names case-insensitively — invoice creation and CSV import
+  // both resolve clients this way, so an exact-case check here would let
+  // "acme" slip in beside "Acme" and split one client into two.
+  const existing = await Client.findOne({
+    userId: req.userId,
+    name: { $regex: `^${escapeRegex(name.trim())}$`, $options: 'i' },
+  })
   if (existing) return res.status(409).json({ error: `A client named "${name.trim()}" already exists`, client: existing })
   const client = await Client.create({
     userId: req.userId,
