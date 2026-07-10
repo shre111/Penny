@@ -199,6 +199,15 @@ importsRouter.post('/invoices', upload.single('file'), async (req, res) => {
       clientsCreated++
     }
 
+    const status = ['draft', 'sent', 'paid', 'void'].includes(statusRaw) ? statusRaw : 'sent'
+    const dueDate = new Date(dueRaw)
+    // A row marked 'paid' carries no payment record, so without this the balance
+    // virtual (amount − amountPaid) would report the full amount still owed on an
+    // invoice the user told us is settled. Record a full payment, dated at the due
+    // date (the best "money arrived" proxy a CSV gives us), so the money math and
+    // the collected/cashflow totals stay honest.
+    const payments = status === 'paid' ? [{ amount, date: dueDate, method: 'imported' }] : []
+
     await Invoice.create({
       userId: req.userId,
       clientId,
@@ -206,8 +215,9 @@ importsRouter.post('/invoices', upload.single('file'), async (req, res) => {
       amount,
       currency: 'USD',
       issueDate: issueRaw && !Number.isNaN(Date.parse(issueRaw)) ? new Date(issueRaw) : new Date(),
-      dueDate: new Date(dueRaw),
-      status: ['draft', 'sent', 'paid', 'void'].includes(statusRaw) ? statusRaw : 'sent',
+      dueDate,
+      status,
+      payments,
       notes,
       source: 'manual',
     })
