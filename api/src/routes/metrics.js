@@ -53,7 +53,10 @@ metricsRouter.get('/summary', async (req, res) => {
 
   const open = invoices.filter((i) => i.status === 'sent' && i.balance > 0)
   const overdue = open.filter((i) => i.effectiveStatus === 'overdue')
+  // Skip voided invoices — a cancelled invoice's past payment isn't revenue, and
+  // the /charts cashflow already excludes void; the two must report the same money.
   const collectedThisMonth = invoices
+    .filter((i) => i.status !== 'void')
     .flatMap((i) => i.payments || [])
     .filter((p) => new Date(p.date) >= monthStart)
     .reduce((s, p) => s + p.amount, 0)
