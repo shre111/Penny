@@ -167,7 +167,8 @@ export function useChatStream(sessionId: string | null) {
   )
 
   const uploadDocument = useCallback(async (file: File) => {
-    if (!sessionRef.current) return
+    const startedFor = sessionRef.current
+    if (!startedFor) return
     setBusy(true)
     setMessages((prev) => [
       ...prev,
@@ -184,29 +185,35 @@ export function useChatStream(sessionId: string | null) {
     try {
       const form = new FormData()
       form.append('file', file)
-      const res = await fetch(`/api/uploads/extract/${sessionRef.current}`, {
+      // Pin the upload to the session it started in — switching chats mid-upload
+      // must not post to (or drop the extracted card into) a different session.
+      const res = await fetch(`/api/uploads/extract/${startedFor}`, {
         method: 'POST',
         credentials: 'include',
         body: form,
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data?.error || 'Upload failed')
-      setMessages((prev) => [...prev, data.message])
+      if (sessionRef.current === startedFor) setMessages((prev) => [...prev, data.message])
     } catch (err: any) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          _id: `local-err-${Date.now()}`,
-          role: 'assistant',
-          content: err?.message || "I couldn't read that file.",
-          events: [],
-          artifacts: [],
-          createdAt: new Date().toISOString(),
-        },
-      ])
+      if (sessionRef.current === startedFor) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            _id: `local-err-${Date.now()}`,
+            role: 'assistant',
+            content: err?.message || "I couldn't read that file.",
+            events: [],
+            artifacts: [],
+            createdAt: new Date().toISOString(),
+          },
+        ])
+      }
     } finally {
-      setStreaming(null)
-      setBusy(false)
+      if (sessionRef.current === startedFor) {
+        setStreaming(null)
+        setBusy(false)
+      }
     }
   }, [])
 
