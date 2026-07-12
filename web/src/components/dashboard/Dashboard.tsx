@@ -22,7 +22,9 @@ export function Dashboard() {
   const invoices = useLiveData<{ invoices: Invoice[] }>('/api/invoices?status=all', ['invoice'])
   const clients = useLiveData<{ clients: Client[] }>('/api/clients', ['client'])
   const emails = useLiveData<{ emails: EmailRecord[] }>('/api/emails', ['email'])
-  const activities = useLiveData<{ activities: any[] }>('/api/activities', ['invoice', 'client', 'email'])
+  // include 'proposal' — proposal approve/decline is recorded as an Activity, so
+  // the feed must refetch on those events too, not just invoice/client/email.
+  const activities = useLiveData<{ activities: any[] }>('/api/activities', ['invoice', 'client', 'email', 'proposal'])
   const forecast = useLiveData<{ forecast: Forecast }>('/api/metrics/forecast', ['invoice'])
   const [seeding, setSeeding] = useState(false)
 
