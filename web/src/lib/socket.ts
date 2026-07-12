@@ -16,7 +16,7 @@ export function disconnectSocket() {
 }
 
 export interface EntityChange {
-  entity: 'invoice' | 'client' | 'email'
+  entity: 'invoice' | 'client' | 'email' | 'proposal'
   action: 'created' | 'updated' | 'deleted' | 'reloaded'
   id: string | null
   actor: 'user' | 'agent' | 'service'
