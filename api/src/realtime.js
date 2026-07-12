@@ -67,9 +67,14 @@ function buildSummary(entity, action, doc) {
   }
   if (entity === 'email') {
     const state =
-      { queued: 'drafted overnight, waiting for your OK', sent: 'sent', simulated: 'saved to the outbox', dismissed: 'skipped', failed: 'failed to send' }[
-        doc?.status
-      ] || verb
+      {
+        queued: 'drafted overnight, waiting for your OK',
+        scheduled: 'auto-sending shortly — you can still cancel',
+        sent: 'sent',
+        simulated: 'saved to the outbox',
+        dismissed: 'skipped',
+        failed: 'failed to send',
+      }[doc?.status] || verb
     return `Email to ${doc?.to || 'a client'} (“${(doc?.subject || '').slice(0, 60)}”) ${state}`
   }
   if (entity === 'proposal') {
