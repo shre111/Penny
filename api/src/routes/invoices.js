@@ -19,7 +19,11 @@ function serialize(inv) {
 
 // status filter accepts the derived 'overdue' and 'open' (= sent, any balance) pseudo-statuses
 invoicesRouter.get('/', async (req, res) => {
-  const { status, clientId, limit = 100 } = req.query
+  const { status, clientId } = req.query
+  // Coerce the caller-supplied limit to a sane integer: a non-numeric value
+  // (Number('abc') → NaN) would break the query, and an unbounded value would
+  // let one request fetch and populate the entire collection. Clamp to 1–500.
+  const limit = Math.min(500, Math.max(1, Math.trunc(Number(req.query.limit)) || 100))
   const filter = { userId: req.userId }
   if (clientId) filter.clientId = clientId
   if (status === 'overdue') {
@@ -32,7 +36,7 @@ invoicesRouter.get('/', async (req, res) => {
   }
   let invoices = await Invoice.find(filter)
     .sort({ dueDate: 1 })
-    .limit(Number(limit))
+    .limit(limit)
     .populate('clientId', 'name email contactName')
   invoices = invoices.map(serialize)
   // 'overdue' also requires unpaid balance, which is virtual — final filter in JS
