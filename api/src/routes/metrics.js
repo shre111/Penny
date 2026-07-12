@@ -109,7 +109,10 @@ metricsRouter.get('/charts', async (req, res) => {
     return `${d.getFullYear()}-${d.getMonth()}`
   }
   for (const inv of invoices) {
-    if (inv.status === 'void') continue
+    // Skip void (cancelled) and draft (never sent to the client) — a draft isn't
+    // billed money, matching how /summary, aging and the retainer insight all
+    // treat drafts as not-yet-billed.
+    if (inv.status === 'void' || inv.status === 'draft') continue
     const mk = monthOf(inv.issueDate)
     const slot = months.find((m) => m.key === mk)
     if (slot) slot.billed += inv.amount
