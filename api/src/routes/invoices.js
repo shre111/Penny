@@ -111,8 +111,11 @@ invoicesRouter.post('/', async (req, res) => {
 invoicesRouter.patch('/:id', async (req, res) => {
   const allowed = ['status', 'dueDate', 'notes', 'amount', 'lineItems', 'lastReminderAt']
   const updates = Object.fromEntries(Object.entries(req.body || {}).filter(([k]) => allowed.includes(k)))
+  // runValidators so a bad update (e.g. status outside the enum, or a negative
+  // amount) is rejected — findOneAndUpdate skips schema validation by default.
   const invoice = await Invoice.findOneAndUpdate({ _id: req.params.id, userId: req.userId }, updates, {
     new: true,
+    runValidators: true,
   }).populate('clientId', 'name email contactName')
   if (!invoice) return res.status(404).json({ error: 'Invoice not found' })
   emitChange(req.userId, { entity: 'invoice', action: 'updated', id: invoice._id, actor: req.actor, doc: serialize(invoice) })
