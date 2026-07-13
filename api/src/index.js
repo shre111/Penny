@@ -71,7 +71,9 @@ app.get(/^\/(?!api\/).*/, (_req, res) => {
 app.use((err, _req, res, _next) => {
   console.error('[api]', err.message)
   if (res.headersSent) return res.end()
-  const status = err.status || (err.name === 'MulterError' ? 400 : 500)
+  // Mongoose validation/cast failures are bad input, not server faults → 400.
+  const isBadInput = err.name === 'ValidationError' || err.name === 'CastError' || err.name === 'MulterError'
+  const status = err.status || (isBadInput ? 400 : 500)
   res.status(status).json({ error: err.message || 'Something went wrong' })
 })
 

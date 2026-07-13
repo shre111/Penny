@@ -22,6 +22,7 @@ memoriesRouter.post('/', async (req, res) => {
 })
 
 memoriesRouter.delete('/:id', async (req, res) => {
-  await Memory.findOneAndDelete({ _id: req.params.id, userId: req.userId })
+  const memory = await Memory.findOneAndDelete({ _id: req.params.id, userId: req.userId })
+  if (!memory) return res.status(404).json({ error: 'Memory not found' })
   res.json({ ok: true })
 })
