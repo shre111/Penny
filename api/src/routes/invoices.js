@@ -127,6 +127,9 @@ invoicesRouter.post('/:id/payments', async (req, res) => {
   if (!amount || amount <= 0) return res.status(400).json({ error: 'Payment amount must be greater than zero' })
   const invoice = await Invoice.findOne({ _id: req.params.id, userId: req.userId })
   if (!invoice) return res.status(404).json({ error: 'Invoice not found' })
+  // A voided invoice is cancelled — recording a payment would silently flip it
+  // back to 'paid'. Reject it; the owner should un-void first if that's intended.
+  if (invoice.status === 'void') return res.status(409).json({ error: 'This invoice is void — reopen it before recording a payment' })
   invoice.payments.push({ amount, date: date || new Date(), method: method || 'bank transfer' })
   if (invoice.balance <= 0) invoice.status = 'paid'
   await invoice.save()
