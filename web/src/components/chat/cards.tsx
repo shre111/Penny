@@ -268,6 +268,10 @@ export function ExtractionCard({
           dueDate: fields.dueDate,
           notes: fields.notes,
           lineItems: data.line_items || [],
+          // carry through what was read off the document, so a non-USD invoice
+          // or a stated issue date isn't silently replaced by the defaults
+          ...(data.currency ? { currency: data.currency } : {}),
+          ...(data.issue_date ? { issueDate: data.issue_date } : {}),
           source: 'document',
         },
       })
