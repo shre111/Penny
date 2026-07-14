@@ -54,8 +54,9 @@ knowledgeRouter.post('/', requireAuth, upload.single('file'), async (req, res) =
 })
 
 knowledgeRouter.delete('/:source', requireAuth, async (req, res) => {
-  await KnowledgeChunk.deleteMany({ userId: req.userId, source: req.params.source })
-  res.json({ ok: true })
+  const { deletedCount } = await KnowledgeChunk.deleteMany({ userId: req.userId, source: req.params.source })
+  if (!deletedCount) return res.status(404).json({ error: 'No knowledge source by that name' })
+  res.json({ ok: true, removed: deletedCount })
 })
 
 // ── service side (the agents' retrieval path) ─────────────────────────────
