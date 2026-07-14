@@ -53,8 +53,15 @@ def _model_draft(inv: dict, owner: str, tone_notes: str) -> dict:
 
 def run_overnight(user_id: str, user_name: str = "", business_name: str = "") -> dict:
     invoices = request(user_id, "GET", "/api/invoices", params={"status": "overdue", "limit": 50})["invoices"]
-    queued_already = request(user_id, "GET", "/api/emails", params={"status": "queued"})["emails"]
-    queued_invoice_ids = {str(e.get("invoiceId")) for e in queued_already if e.get("invoiceId")}
+    # Skip invoices that already have a reminder in flight. Include 'scheduled'
+    # (earned-autonomy auto-sends waiting out their cancel window) as well as
+    # 'queued' — otherwise a re-run would draft a second reminder for the same
+    # invoice while the first is still pending its auto-send.
+    pending = (
+        request(user_id, "GET", "/api/emails", params={"status": "queued"})["emails"]
+        + request(user_id, "GET", "/api/emails", params={"status": "scheduled"})["emails"]
+    )
+    queued_invoice_ids = {str(e.get("invoiceId")) for e in pending if e.get("invoiceId")}
 
     try:
         owner = request(user_id, "GET", "/api/memories")["memories"]
