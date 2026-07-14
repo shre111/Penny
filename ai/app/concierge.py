@@ -90,9 +90,14 @@ def build_concierge_agent(payload: dict):
         """Record when the client says they will pay. date: YYYY-MM-DD. Use after they
         clearly commit to a date. Thank them once recorded."""
         try:
-            datetime.strptime(date, "%Y-%m-%d")
+            promised = datetime.strptime(date, "%Y-%m-%d").date()
         except ValueError:
             return json.dumps({"error": "date must be YYYY-MM-DD"})
+        # A promise must be for the future — a past date is meaningless and would
+        # land in the forecast as already-slipped. Ask the client for a real date.
+        # (datetime.now(), not the shadowed `date` param, to read today's date.)
+        if promised < datetime.now().date():
+            return json.dumps({"error": "that date is in the past — please give a date from today onward"})
         data = request(user_id, "POST", f"/api/invoices/{inv['id']}/promise", json={"date": date, "note": note})
         return json.dumps({"recorded": True, "date": date, "invoice": data["invoice"]["number"]})
 
