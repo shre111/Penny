@@ -291,13 +291,15 @@ metricsRouter.get('/briefing', async (req, res) => {
   res.json({
     briefing: {
       overdueCount: overdue.length,
-      overdueTotal: overdue.reduce((s, i) => s + i.balance, 0),
+      // round the summed money like /summary does — otherwise float drift can
+      // reach the briefing card, the spoken briefing, and the agent's metrics.
+      overdueTotal: round2(overdue.reduce((s, i) => s + i.balance, 0)),
       newlyOverdueCount: newlyOverdue.length,
-      newlyOverdueTotal: newlyOverdue.reduce((s, i) => s + i.balance, 0),
+      newlyOverdueTotal: round2(newlyOverdue.reduce((s, i) => s + i.balance, 0)),
       dueSoonCount: dueSoon.length,
-      dueSoonTotal: dueSoon.reduce((s, i) => s + i.balance, 0),
+      dueSoonTotal: round2(dueSoon.reduce((s, i) => s + i.balance, 0)),
       paymentsReceivedCount: recentPayments.length,
-      paymentsReceivedTotal: recentPayments.reduce((s, p) => s + p.amount, 0),
+      paymentsReceivedTotal: round2(recentPayments.reduce((s, p) => s + p.amount, 0)),
       overdueInvoices: overdue.slice(0, 5).map((i) => ({
         id: i._id,
         number: i.number,
