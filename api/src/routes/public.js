@@ -78,6 +78,7 @@ function publicView(invoice, owner) {
     issueDate: inv.issueDate,
     dueDate: inv.dueDate,
     status: inv.effectiveStatus,
+    daysOverdue: inv.daysOverdue, // so the public page can say "N days late", not "0"
     promisedDate: inv.promisedDate || null,
     installmentPlan: inv.installmentPlan || null,
     notes: inv.notes,

@@ -19,6 +19,7 @@ interface PublicInvoiceData {
   issueDate: string
   dueDate: string
   status: string
+  daysOverdue: number
   promisedDate: string | null
   installmentPlan: { amount: number; date: string }[] | null
   conciergeEnabled: boolean
@@ -246,7 +247,7 @@ export default function PublicInvoice() {
             {invoice.amountPaid > 0 && <p className="text-sm text-ink-soft">Paid −{fmtMoney(invoice.amountPaid, invoice.currency)}</p>}
             <p className="text-xl font-bold text-brand-700">Balance due {fmtMoney(invoice.balance, invoice.currency)}</p>
             <p className={`text-xs ${invoice.status === 'overdue' ? 'text-danger-600 font-semibold' : 'text-ink-soft'}`}>
-              {dueLabel({ dueDate: invoice.dueDate, effectiveStatus: invoice.status, daysOverdue: 0 })} · {fmtDate(invoice.dueDate)}
+              {dueLabel({ dueDate: invoice.dueDate, effectiveStatus: invoice.status, daysOverdue: invoice.daysOverdue })} · {fmtDate(invoice.dueDate)}
             </p>
           </div>
 
