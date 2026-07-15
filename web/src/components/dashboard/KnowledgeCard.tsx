@@ -57,8 +57,15 @@ export function KnowledgeCard() {
   }
 
   const forget = async (source: string) => {
-    await api(`/api/knowledge/${encodeURIComponent(source)}`, { method: 'DELETE' })
-    load()
+    setNote('')
+    try {
+      await api(`/api/knowledge/${encodeURIComponent(source)}`, { method: 'DELETE' })
+    } catch (err: any) {
+      // surface it (e.g. already removed → 404) instead of an unhandled rejection
+      setNote(err?.message || "Couldn't remove that source")
+    } finally {
+      load()
+    }
   }
 
   return (
