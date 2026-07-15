@@ -81,11 +81,22 @@ chatRouter.post('/sessions/:id/resume', async (req, res) => {
   session.lastMessageAt = new Date()
   await session.save()
 
-  await relayAgentStream(req, res, session, '/resume', {
+  const outcome = await relayAgentStream(req, res, session, '/resume', {
     thread_id: session._id.toString(),
     user_id: req.userId,
     decisions,
   })
+
+  // If the resume never reached the agent (upstream error, nothing produced),
+  // the LangGraph checkpoint still holds this interrupt as pending — so revert
+  // our copy too, otherwise the approval card is stranded 'resolved' forever
+  // and can never be retried.
+  if (outcome?.upstreamError && !outcome.produced) {
+    msg.interrupt.status = 'pending'
+    msg.interrupt.decisions = undefined
+    msg.markModified('interrupt')
+    await msg.save().catch((err) => console.error('[chat resume revert]', err.message))
+  }
 })
 
 async function relayAgentStream(req, res, session, aiPath, payload) {
@@ -166,8 +177,9 @@ async function relayAgentStream(req, res, session, aiPath, payload) {
   }
 
   // Persist whatever the agent produced this turn (even partial on error)
+  const produced = Boolean(text || events.length || artifacts.length || interrupt)
   try {
-    if (text || events.length || artifacts.length || interrupt || upstreamError) {
+    if (produced || upstreamError) {
       const assistantMsg = await Message.create({
         sessionId: session._id,
         userId: session.userId,
@@ -189,4 +201,5 @@ async function relayAgentStream(req, res, session, aiPath, payload) {
     console.error('[chat persist]', err.message)
   }
   res.end()
+  return { upstreamError, produced }
 }
