@@ -17,14 +17,19 @@ export function ConciergeSettings() {
   })
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [error, setError] = useState('')
 
   const save = async () => {
     setBusy(true)
+    setError('')
     try {
       const d = await api<{ user: User }>('/api/auth/concierge', { method: 'PATCH', json: form })
       setUser(d.user)
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
+    } catch (err: any) {
+      // don't leave the click looking like nothing happened
+      setError(err?.message || "Couldn't save your limits — please try again")
     } finally {
       setBusy(false)
     }
@@ -82,6 +87,7 @@ export function ConciergeSettings() {
           {busy ? <Spinner /> : saved ? 'Saved ✓' : 'Save limits'}
         </button>
       </div>
+      {error && <p className="text-xs text-danger-600 mt-2">{error}</p>}
     </div>
   )
 }
