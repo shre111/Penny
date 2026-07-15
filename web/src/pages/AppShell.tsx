@@ -22,7 +22,9 @@ export default function AppShell() {
   const [mobileView, setMobileView] = useState<'dashboard' | 'chat'>('chat')
   const [chatWidth, setChatWidth] = useState(() => {
     const saved = Number(localStorage.getItem(CHAT_WIDTH_KEY))
-    return saved >= CHAT_WIDTH_MIN ? saved : CHAT_WIDTH_DEFAULT
+    // clamp a restored width to the current viewport's max — a value saved on a
+    // wider window would otherwise overflow the panel on a narrower one.
+    return saved >= CHAT_WIDTH_MIN ? Math.min(saved, chatWidthMax()) : CHAT_WIDTH_DEFAULT
   })
   const [dragging, setDragging] = useState(false)
   const widthRef = useRef(chatWidth)
