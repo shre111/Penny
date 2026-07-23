@@ -140,6 +140,18 @@ export function ChatPanel() {
     })
   }, [messages, busy, handsFree])
 
+  // The proactive opening (shown on an empty conversation). Refresh it whenever
+  // a new conversation starts, so it doesn't show a snapshot from page-load
+  // after the owner has already chased/logged/paid things.
+  const loadBriefing = useCallback(() => {
+    api<{ briefing: Briefing }>('/api/metrics/briefing')
+      .then((d) => setBriefing(d.briefing))
+      .catch(() => {})
+    api<{ insights: Insight[] }>('/api/metrics/insights')
+      .then((d) => setInsights(d.insights))
+      .catch(() => {})
+  }, [])
+
   // load (or start) a conversation
   useEffect(() => {
     api<{ sessions: ChatSession[] }>('/api/chat/sessions').then(async (d) => {
@@ -152,13 +164,8 @@ export function ChatPanel() {
         setSessionId(created.session._id)
       }
     })
-    api<{ briefing: Briefing }>('/api/metrics/briefing')
-      .then((d) => setBriefing(d.briefing))
-      .catch(() => {})
-    api<{ insights: Insight[] }>('/api/metrics/insights')
-      .then((d) => setInsights(d.insights))
-      .catch(() => {})
-  }, [])
+    loadBriefing()
+  }, [loadBriefing])
 
   // keep pinned to the bottom while content streams in
   useEffect(() => {
@@ -171,6 +178,7 @@ export function ChatPanel() {
     setSessions((prev) => [created.session, ...prev])
     setSessionId(created.session._id)
     setShowSessions(false)
+    loadBriefing() // the fresh conversation's welcome should reflect the latest books
   }
 
   const deleteSession = async (id: string) => {
