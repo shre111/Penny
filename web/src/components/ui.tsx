@@ -12,10 +12,22 @@ export function CoinMark({ size = 34 }: { size?: number }) {
   )
 }
 
+// Keep the coin proportional to the wordmark's text size — a fixed 34px coin
+// looked oversized next to the small footer wordmarks (text-base / text-xs).
+const COIN_FOR_SIZE: Record<string, number> = {
+  'text-xs': 18,
+  'text-sm': 20,
+  'text-base': 22,
+  'text-lg': 24,
+  'text-xl': 28,
+  'text-2xl': 34,
+  'text-3xl': 40,
+}
+
 export function Wordmark({ size = 'text-2xl' }: { size?: string }) {
   return (
     <span className={`inline-flex items-center gap-2.5 ${size}`}>
-      <CoinMark />
+      <CoinMark size={COIN_FOR_SIZE[size] ?? 34} />
       <span className="font-display font-semibold tracking-tight">Penny</span>
     </span>
   )
