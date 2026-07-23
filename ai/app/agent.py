@@ -34,6 +34,22 @@ MULTI_AGENT = os.getenv("PENNY_MULTI_AGENT", "true").lower() != "false"
 _mongo = MongoClient(config.MONGODB_URI)
 checkpointer = MongoDBSaver(_mongo, db_name="penny_agent")
 
+
+def delete_thread(thread_id: str) -> None:
+    """Best-effort cleanup of a conversation's agent checkpoint, called when its
+    chat session is deleted so orphaned state doesn't pile up in penny_agent."""
+    try:
+        checkpointer.delete_thread(thread_id)
+        return
+    except AttributeError:
+        pass  # older langgraph without delete_thread → drop the docs directly
+    db = _mongo["penny_agent"]
+    for coll in ("checkpoints", "checkpoint_writes", "checkpoint_blobs"):
+        try:
+            db[coll].delete_many({"thread_id": thread_id})
+        except Exception:  # noqa: BLE001 — cleanup must never raise into the caller
+            pass
+
 _models: dict = {}
 
 

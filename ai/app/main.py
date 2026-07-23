@@ -11,7 +11,7 @@ from langgraph.types import Command
 from pydantic import BaseModel
 
 from . import config
-from .agent import build_agent
+from .agent import build_agent, delete_thread
 from .composio_client import send_gmail
 from .extraction import extract_invoice
 from .overnight import run_overnight
@@ -167,6 +167,15 @@ def send(body: SendIn, x_service_token: str | None = Header(default=None)):
     check_service_token(x_service_token)
     status, error = send_gmail(body.to, body.subject, body.body)
     return {"status": status, "error": error}
+
+
+@app.delete("/thread/{thread_id}")
+def delete_thread_endpoint(thread_id: str, x_service_token: str | None = Header(default=None)):
+    """Drop a conversation's checkpointed agent state (called when Node deletes
+    the chat session). Best-effort — never fails the caller's delete."""
+    check_service_token(x_service_token)
+    delete_thread(thread_id)
+    return {"ok": True}
 
 
 @app.post("/extract")

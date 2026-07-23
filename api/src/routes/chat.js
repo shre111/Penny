@@ -21,6 +21,13 @@ chatRouter.delete('/sessions/:id', async (req, res) => {
   const session = await ChatSession.findOneAndDelete({ _id: req.params.id, userId: req.userId })
   if (!session) return res.status(404).json({ error: 'Conversation not found' })
   await Message.deleteMany({ sessionId: session._id })
+  // Best-effort: clear the agent's checkpointed state for this thread so it
+  // doesn't linger in the penny_agent store. Don't let a slow/down AI service
+  // hold up (or fail) the delete the user asked for.
+  fetch(`${config.aiUrl}/thread/${session._id}`, {
+    method: 'DELETE',
+    headers: { 'X-Service-Token': config.serviceToken },
+  }).catch((err) => console.error('[chat] checkpoint cleanup:', err.message))
   res.json({ ok: true })
 })
 
