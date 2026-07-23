@@ -22,6 +22,13 @@ activitiesRouter.post('/:id/undo', async (req, res) => {
   if (activity.undoneAt) return res.status(409).json({ error: 'Already undone' })
 
   if (activity.undo.type === 'delete-invoice') {
+    // Don't silently destroy money history: if a payment was recorded on this
+    // invoice after Penny created it, undoing (deleting) it would lose that too.
+    const target = await Invoice.findOne({ _id: activity.entityId, userId: req.userId })
+    if (!target) return res.status(404).json({ error: 'That invoice is already gone' })
+    if ((target.payments?.length || 0) > 0) {
+      return res.status(409).json({ error: "This invoice has a payment recorded on it — undoing would erase that. Delete it manually if you're sure." })
+    }
     const invoice = await Invoice.findOneAndDelete({ _id: activity.entityId, userId: req.userId })
     if (!invoice) return res.status(404).json({ error: 'That invoice is already gone' })
     emitChange(req.userId, { entity: 'invoice', action: 'deleted', id: invoice._id, actor: 'user', doc: invoice })
