@@ -7,7 +7,12 @@ export const memoriesRouter = Router()
 memoriesRouter.use(requireUserOrService)
 
 memoriesRouter.get('/', async (req, res) => {
-  const memories = await Memory.find({ userId: req.userId }).sort({ createdAt: 1 }).limit(50).lean()
+  // Return the 50 MOST RECENT memories, oldest→newest. Consumers (the agent's
+  // system prompt, the overnight tone notes) take a tail slice expecting the
+  // newest at the end — sorting ascending + limit 50 would instead keep the
+  // oldest 50 and silently drop the newest once a user passes 50.
+  const memories = await Memory.find({ userId: req.userId }).sort({ createdAt: -1 }).limit(50).lean()
+  memories.reverse()
   res.json({ memories })
 })
 
