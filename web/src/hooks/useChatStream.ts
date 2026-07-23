@@ -63,11 +63,12 @@ export function useChatStream(sessionId: string | null) {
   }, [sessionId])
 
   const runStream = useCallback(
-    async (url: string, body: unknown) => {
+    async (url: string, body: unknown): Promise<boolean> => {
       const startedFor = sessionRef.current
       setBusy(true)
       setStreaming(emptyStreaming())
       const acc = emptyStreaming()
+      let ok = true
       try {
         const res = await fetch(url, {
           method: 'POST',
@@ -110,6 +111,7 @@ export function useChatStream(sessionId: string | null) {
           setMessages((prev) => [...prev, finalized])
         }
       } catch (err: any) {
+        ok = false
         if (sessionRef.current === startedFor) {
           setMessages((prev) => [
             ...prev,
@@ -129,6 +131,7 @@ export function useChatStream(sessionId: string | null) {
           setBusy(false)
         }
       }
+      return ok
     },
     []
   )
@@ -161,7 +164,17 @@ export function useChatStream(sessionId: string | null) {
           m._id === messageId && m.interrupt ? { ...m, interrupt: { ...m.interrupt, status: 'resolved' } } : m
         )
       )
-      await runStream(`/api/chat/sessions/${sessionRef.current}/resume`, { messageId, decisions })
+      const ok = await runStream(`/api/chat/sessions/${sessionRef.current}/resume`, { messageId, decisions })
+      if (!ok) {
+        // the resume didn't reach the agent — the server keeps this interrupt
+        // pending (and reverts its own copy), so un-resolve the card here too
+        // instead of leaving it stuck 'resolved' until a reload.
+        setMessages((prev) =>
+          prev.map((m) =>
+            m._id === messageId && m.interrupt ? { ...m, interrupt: { ...m.interrupt, status: 'pending' } } : m
+          )
+        )
+      }
     },
     [runStream]
   )
