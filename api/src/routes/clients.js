@@ -46,6 +46,17 @@ clientsRouter.post('/', async (req, res) => {
 clientsRouter.patch('/:id', async (req, res) => {
   const allowed = ['name', 'contactName', 'email', 'phone', 'notes']
   const updates = Object.fromEntries(Object.entries(req.body || {}).filter(([k]) => allowed.includes(k)))
+  // Renaming onto another client's name would create the same case-insensitive
+  // collision POST already blocks — guard it here too (excluding this client).
+  if (updates.name?.trim()) {
+    const clash = await Client.findOne({
+      _id: { $ne: req.params.id },
+      userId: req.userId,
+      name: { $regex: `^${escapeRegex(updates.name.trim())}$`, $options: 'i' },
+    })
+    if (clash) return res.status(409).json({ error: `A client named "${updates.name.trim()}" already exists` })
+    updates.name = updates.name.trim()
+  }
   const client = await Client.findOneAndUpdate({ _id: req.params.id, userId: req.userId }, updates, { new: true })
   if (!client) return res.status(404).json({ error: 'Client not found' })
   emitChange(req.userId, { entity: 'client', action: 'updated', id: client._id, actor: req.actor, doc: client })
