@@ -32,6 +32,14 @@ export default function AppShell() {
     widthRef.current = chatWidth
   }, [chatWidth])
 
+  // Shrinking the window can leave the panel wider than the new max — clamp it
+  // down on resize (init already clamps the restored value; this covers live resizes).
+  useEffect(() => {
+    const onResize = () => setChatWidth((w) => Math.min(w, chatWidthMax()))
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
   // a dashboard "Ask Penny" tap should reveal the chat on small screens
   useEffect(() => onAskPenny(() => setMobileView('chat')), [])
 
