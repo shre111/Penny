@@ -1,7 +1,16 @@
 import jwt from 'jsonwebtoken'
+import crypto from 'node:crypto'
 import { config } from '../config.js'
 
 export const COOKIE_NAME = 'penny_token'
+
+// Constant-time string compare so the shared service token can't be recovered
+// byte-by-byte by timing responses. Length mismatch → not equal (never throws).
+function tokensMatch(provided, expected) {
+  const a = Buffer.from(String(provided))
+  const b = Buffer.from(String(expected))
+  return a.length === b.length && crypto.timingSafeEqual(a, b)
+}
 
 export function signToken(userId) {
   return jwt.sign({ sub: userId.toString() }, config.jwtSecret, { expiresIn: '7d' })
@@ -39,7 +48,7 @@ export function requireAuth(req, res, next) {
 export function requireUserOrService(req, res, next) {
   const serviceToken = req.headers['x-service-token']
   if (serviceToken) {
-    if (serviceToken !== config.serviceToken) {
+    if (!tokensMatch(serviceToken, config.serviceToken)) {
       return res.status(401).json({ error: 'Bad service token' })
     }
     const userId = req.headers['x-user-id']
