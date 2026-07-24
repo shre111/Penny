@@ -27,6 +27,7 @@ export function Dashboard() {
   const activities = useLiveData<{ activities: any[] }>('/api/activities', ['invoice', 'client', 'email', 'proposal'])
   const forecast = useLiveData<{ forecast: Forecast }>('/api/metrics/forecast', ['invoice'])
   const [seeding, setSeeding] = useState(false)
+  const [seedError, setSeedError] = useState('')
 
   // Penny's pointer: spotlight the element she's currently reading/changing
   const [spot, setSpot] = useState<SpotlightKey | null>(null)
@@ -59,9 +60,13 @@ export function Dashboard() {
 
   const loadSample = async () => {
     setSeeding(true)
+    setSeedError('')
     try {
       await api('/api/demo/load', { method: 'POST' })
       await Promise.all([summary.refetch(), charts.refetch(), invoices.refetch(), clients.refetch(), emails.refetch()])
+    } catch (err: any) {
+      // don't leave the button looking like nothing happened
+      setSeedError(err?.message || "Couldn't load the sample business — please try again")
     } finally {
       setSeeding(false)
     }
@@ -89,10 +94,13 @@ export function Dashboard() {
           ))}
         </nav>
         {isEmpty && (
-          <button className="btn-copper text-sm" onClick={loadSample} disabled={seeding}>
-            {seeding ? <Spinner /> : <Sparkles className="h-4 w-4" />}
-            Load sample business
-          </button>
+          <div className="text-right">
+            <button className="btn-copper text-sm" onClick={loadSample} disabled={seeding}>
+              {seeding ? <Spinner /> : <Sparkles className="h-4 w-4" />}
+              Load sample business
+            </button>
+            {seedError && <p className="text-xs text-danger-600 mt-1">{seedError}</p>}
+          </div>
         )}
       </div>
 
