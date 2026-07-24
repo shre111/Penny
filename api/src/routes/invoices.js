@@ -89,6 +89,12 @@ invoicesRouter.post('/', async (req, res) => {
   const finalAmount = amount ?? computed
   if (!finalAmount || finalAmount <= 0) return res.status(400).json({ error: 'Invoice amount must be greater than zero' })
   if (!dueDate) return res.status(400).json({ error: 'A due date is required' })
+  // Validate dates up front for a clear message, instead of letting an
+  // unparseable value fall through to a raw Mongoose CastError.
+  if (Number.isNaN(new Date(dueDate).getTime()))
+    return res.status(400).json({ error: 'The due date is not a valid date (use YYYY-MM-DD)' })
+  if (issueDate && Number.isNaN(new Date(issueDate).getTime()))
+    return res.status(400).json({ error: 'The issue date is not a valid date (use YYYY-MM-DD)' })
 
   const invoice = await Invoice.create({
     userId: req.userId,
