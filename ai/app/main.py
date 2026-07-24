@@ -5,6 +5,8 @@ Endpoints (called only by the Node API, authenticated by shared secret):
   POST /resume  {thread_id, user_id, decisions}                        → SSE
   POST /extract multipart file                                          → JSON
 """
+import hmac
+
 from fastapi import FastAPI, Header, HTTPException, UploadFile, File
 from fastapi.responses import StreamingResponse
 from langgraph.types import Command
@@ -21,7 +23,9 @@ app = FastAPI(title="penny-ai")
 
 
 def check_service_token(x_service_token: str | None):
-    if x_service_token != config.SERVICE_TOKEN:
+    # constant-time compare so the shared secret can't be guessed byte-by-byte
+    # by timing responses to this internal endpoint
+    if not hmac.compare_digest(x_service_token or "", config.SERVICE_TOKEN):
         raise HTTPException(401, "bad service token")
 
 
