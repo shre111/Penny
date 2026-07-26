@@ -4,7 +4,17 @@ import { Invoice } from '../models/Invoice.js'
 import { User } from '../models/User.js'
 import { renderInvoicePdf } from './invoicePdf.js'
 import { config } from '../config.js'
-import { isLockedOut, recordFailure, clearFailures } from '../rateLimit.js'
+import { isLockedOut, recordFailure, clearFailures, rateLimit } from '../rateLimit.js'
+
+// Per-IP throttle for the unauthenticated GET endpoints (page + PDF). Generous
+// enough for real viewing, but stops a link-holder from hammering the PDF
+// renderer or scraping in a loop. The chat has its own per-token limiter.
+const publicGetLimiter = rateLimit({
+  max: 120,
+  windowMs: 60 * 1000,
+  key: (r) => `pubget:${r.ip}`,
+  message: 'Too many requests — please slow down and try again shortly.',
+})
 
 /**
  * The public face of an invoice — no login, the share token IS the auth.
@@ -86,7 +96,7 @@ function publicView(invoice, owner) {
   }
 }
 
-publicRouter.get('/invoice/:token', async (req, res) => {
+publicRouter.get('/invoice/:token', publicGetLimiter, async (req, res) => {
   const found = await loadByToken(req.params.token)
   if (!found) return res.status(404).json({ error: 'This invoice link is not valid' })
   const gate = await pinGate(found.invoice, req.params.token, readPin(req))
@@ -94,7 +104,7 @@ publicRouter.get('/invoice/:token', async (req, res) => {
   res.json({ invoice: publicView(found.invoice, found.owner) })
 })
 
-publicRouter.get('/invoice/:token/pdf', async (req, res) => {
+publicRouter.get('/invoice/:token/pdf', publicGetLimiter, async (req, res) => {
   const found = await loadByToken(req.params.token)
   if (!found) return res.status(404).json({ error: 'This invoice link is not valid' })
   const gate = await pinGate(found.invoice, req.params.token, readPin(req))
