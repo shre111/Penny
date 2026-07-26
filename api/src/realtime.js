@@ -6,7 +6,11 @@ import { config } from './config.js'
 let io = null
 
 export function attachRealtime(httpServer) {
-  io = new Server(httpServer, { cors: { origin: true, credentials: true } })
+  // origin:true reflected ANY origin while allowing credentials, so a malicious
+  // page could open an authenticated socket with the visitor's cookie and read
+  // their live entity:changed events. Restrict to the same allowlist the CSRF
+  // guard uses (same-origin connections aren't subject to CORS, so prod is fine).
+  io = new Server(httpServer, { cors: { origin: config.allowedOrigins, credentials: true } })
 
   io.use((socket, next) => {
     // Authenticate the websocket with the same JWT cookie the API uses
