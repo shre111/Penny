@@ -131,15 +131,25 @@ invoicesRouter.patch('/:id', async (req, res) => {
 invoicesRouter.post('/:id/payments', async (req, res) => {
   const { amount, date, method } = req.body || {}
   if (!amount || amount <= 0) return res.status(400).json({ error: 'Payment amount must be greater than zero' })
-  const invoice = await Invoice.findOne({ _id: req.params.id, userId: req.userId })
-  if (!invoice) return res.status(404).json({ error: 'Invoice not found' })
+  const existing = await Invoice.findOne({ _id: req.params.id, userId: req.userId })
+  if (!existing) return res.status(404).json({ error: 'Invoice not found' })
   // A voided invoice is cancelled — recording a payment would silently flip it
   // back to 'paid'. Reject it; the owner should un-void first if that's intended.
-  if (invoice.status === 'void') return res.status(409).json({ error: 'This invoice is void — reopen it before recording a payment' })
-  invoice.payments.push({ amount, date: date || new Date(), method: method || 'bank transfer' })
-  if (invoice.balance <= 0) invoice.status = 'paid'
-  await invoice.save()
-  await invoice.populate('clientId', 'name email contactName')
+  if (existing.status === 'void') return res.status(409).json({ error: 'This invoice is void — reopen it before recording a payment' })
+  // Append with an atomic $push, not a read-modify-write on the array: two
+  // payments recorded concurrently would otherwise both load the same array and
+  // the second save would clobber the first (a lost payment).
+  const invoice = await Invoice.findOneAndUpdate(
+    { _id: req.params.id, userId: req.userId, status: { $ne: 'void' } },
+    { $push: { payments: { amount, date: date || new Date(), method: method || 'bank transfer' } } },
+    { new: true }
+  ).populate('clientId', 'name email contactName')
+  if (!invoice) return res.status(404).json({ error: 'Invoice not found' })
+  // Mark paid once the balance clears (idempotent — a concurrent setter is fine)
+  if (invoice.balance <= 0 && invoice.status !== 'paid') {
+    invoice.status = 'paid'
+    await invoice.save()
+  }
   emitChange(req.userId, { entity: 'invoice', action: 'updated', id: invoice._id, actor: req.actor, doc: serialize(invoice) })
   res.json({ invoice: serialize(invoice) })
 })
