@@ -50,10 +50,23 @@ proposalsRouter.post('/', async (req, res) => {
 
 // Owner approves → the arrangement is applied to the books
 proposalsRouter.post('/:id/approve', requireAuth, async (req, res) => {
-  const proposal = await Proposal.findOne({ _id: req.params.id, userId: req.userId, status: 'pending' })
+  // Atomically claim the proposal so two concurrent approvals can't both apply
+  // the arrangement (and double the activity/broadcast). Loser gets null → 409.
+  const proposal = await Proposal.findOneAndUpdate(
+    { _id: req.params.id, userId: req.userId, status: 'pending' },
+    { status: 'approved', decidedAt: new Date() },
+    { new: true }
+  )
   if (!proposal) return res.status(409).json({ error: 'This request was already handled' })
   const invoice = await Invoice.findOne({ _id: proposal.invoiceId, userId: req.userId })
-  if (!invoice) return res.status(404).json({ error: 'Invoice not found' })
+  if (!invoice) {
+    // invoice vanished between request and approval — undo the claim so the
+    // proposal isn't stranded 'approved' with nothing applied
+    proposal.status = 'pending'
+    proposal.decidedAt = undefined
+    await proposal.save()
+    return res.status(404).json({ error: 'Invoice not found' })
+  }
 
   if (proposal.type === 'extension') {
     invoice.dueDate = new Date(proposal.details.newDueDate)
@@ -67,9 +80,7 @@ proposalsRouter.post('/:id/approve', requireAuth, async (req, res) => {
   await invoice.save()
   await invoice.populate('clientId', 'name email contactName')
 
-  proposal.status = 'approved'
-  proposal.decidedAt = new Date()
-  await proposal.save()
+  // proposal was already marked 'approved' by the atomic claim above
 
   emitChange(req.userId, { entity: 'invoice', action: 'updated', id: invoice._id, actor: 'user', doc: invoice.toObject({ virtuals: true }) })
   emitChange(req.userId, { entity: 'proposal', action: 'updated', id: proposal._id, actor: 'user', doc: { ...proposal.toObject(), invoiceNumber: invoice.number } })
