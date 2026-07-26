@@ -62,7 +62,15 @@ emailsRouter.post('/', async (req, res) => {
 
 // Owner approves an overnight draft (optionally edited) → it actually sends.
 emailsRouter.post('/:id/approve', requireAuth, async (req, res) => {
-  const email = await Email.findOne({ _id: req.params.id, userId: req.userId, status: 'queued' })
+  // Atomically claim the draft so two concurrent approvals can't both reach the
+  // send call and email the client twice. We move it out of 'queued'
+  // provisionally (to 'simulated'); it's corrected to the real result below, and
+  // put back to 'queued' if the send fails. The loser of the race gets null → 409.
+  const email = await Email.findOneAndUpdate(
+    { _id: req.params.id, userId: req.userId, status: 'queued' },
+    { $set: { status: 'simulated' } },
+    { new: true }
+  )
   if (!email) return res.status(409).json({ error: 'This draft was already handled' })
 
   // trust signal: did the owner ship her words, or rewrite them?
@@ -88,7 +96,9 @@ emailsRouter.post('/:id/approve', requireAuth, async (req, res) => {
   }
 
   if (result.status === 'failed') {
-    // keep the draft approvable — a transient send failure shouldn't eat it
+    // put it back in the queue — a transient send failure shouldn't eat the
+    // draft (it was provisionally claimed out of 'queued' above)
+    email.status = 'queued'
     email.error = result.error || 'send failed'
     await email.save()
     emitChange(req.userId, { entity: 'email', action: 'updated', id: email._id, actor: 'user', doc: email })
