@@ -83,9 +83,20 @@ export function startOvernightSchedule() {
   cron.schedule('* * * * *', async () => {
     try {
       const due = await Email.find({ status: 'scheduled', sendAt: { $lte: new Date() } }).limit(20)
-      for (const email of due) {
+      for (const stub of due) {
+        // Atomically claim the row before sending: a plain find() + save()
+        // leaves the doc as 'scheduled' for the whole duration of the upstream
+        // send call, so a slow send (>60s) would still match the next tick's
+        // find() and get sent twice. Claiming it out of 'scheduled' first (same
+        // pattern as the owner-approve route) means only one tick can win it.
+        const email = await Email.findOneAndUpdate(
+          { _id: stub._id, status: 'scheduled' },
+          { $set: { status: 'simulated' } },
+          { new: true }
+        )
+        if (!email) continue // a previous tick already claimed this one
         // Each send is isolated: one bad email must not abort the rest of the
-        // batch, and — critically — must always leave 'scheduled' state, or the
+        // batch, and — critically — must always leave a terminal status, or the
         // minute-cron would re-pick it and send it again on the next tick.
         try {
           let result = { status: 'simulated', error: null }
