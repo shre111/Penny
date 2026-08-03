@@ -11,10 +11,13 @@ clientsRouter.use(requireUserOrService)
 
 clientsRouter.get('/', async (req, res) => {
   const { q } = req.query
+  // Same clamp as invoices.js: an unbounded query would let one request fetch
+  // (and run paymentBehavior over) the whole collection. Clamp to 1-500.
+  const limit = Math.min(500, Math.max(1, Math.trunc(Number(req.query.limit)) || 200))
   const filter = { userId: req.userId }
   if (q) filter.name = { $regex: escapeRegex(q), $options: 'i' }
   const [clients, behavior] = await Promise.all([
-    Client.find(filter).sort({ name: 1 }).lean(),
+    Client.find(filter).sort({ name: 1 }).limit(limit).lean(),
     paymentBehavior(req.userId),
   ])
   res.json({ clients: clients.map((c) => ({ ...c, behavior: behavior[String(c._id)] || null })) })
