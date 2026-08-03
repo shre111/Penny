@@ -211,22 +211,28 @@ metricsRouter.get('/insights', async (req, res) => {
   const now = new Date()
   const insights = []
 
-  // 1) possible duplicates: same client + amount, both still unpaid, issued close together
+  // 1) possible duplicates: same client + amount, both still unpaid, issued close together.
+  // Group by client+amount first so we only pairwise-compare within a group
+  // (normally 1-2 invoices) instead of every open invoice against every other.
   const open = invoices.filter((i) => i.status === 'sent' && i.balance > 0)
-  for (let a = 0; a < open.length; a++) {
-    for (let b = a + 1; b < open.length; b++) {
-      const x = open[a]
-      const y = open[b]
-      if (
-        String(x.clientId?._id) === String(y.clientId?._id) &&
-        x.amount === y.amount &&
-        Math.abs(new Date(x.issueDate) - new Date(y.issueDate)) < 30 * 86400000
-      ) {
-        insights.push({
-          type: 'duplicate',
-          message: `${x.number} and ${y.number} to ${x.clientId?.name} are both $${x.amount.toLocaleString('en-US')} — possible duplicate?`,
-          invoices: [x.number, y.number],
-        })
+  const byClientAmount = {}
+  for (const inv of open) {
+    const key = `${inv.clientId?._id}:${inv.amount}`
+    ;(byClientAmount[key] ||= []).push(inv)
+  }
+  for (const group of Object.values(byClientAmount)) {
+    if (group.length < 2) continue
+    for (let a = 0; a < group.length; a++) {
+      for (let b = a + 1; b < group.length; b++) {
+        const x = group[a]
+        const y = group[b]
+        if (Math.abs(new Date(x.issueDate) - new Date(y.issueDate)) < 30 * 86400000) {
+          insights.push({
+            type: 'duplicate',
+            message: `${x.number} and ${y.number} to ${x.clientId?.name} are both $${x.amount.toLocaleString('en-US')} — possible duplicate?`,
+            invoices: [x.number, y.number],
+          })
+        }
       }
     }
   }
