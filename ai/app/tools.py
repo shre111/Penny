@@ -136,7 +136,17 @@ def build_tools(user_id: str) -> list:
         matches = data["clients"]
         if not matches:
             raise NodeAPIError(f"No client found matching '{client_name}'")
-        client = matches[0]
+        # The lookup is a partial, case-insensitive search — "Acme" would also
+        # match "Acme Hardware Co". Prefer an exact name match so we never edit
+        # the wrong client; if several partial matches tie, ask instead of guessing.
+        exact = [m for m in matches if m["name"].strip().lower() == client_name.strip().lower()]
+        if exact:
+            client = exact[0]
+        elif len(matches) > 1:
+            names = ", ".join(m["name"] for m in matches)
+            raise NodeAPIError(f"'{client_name}' matches multiple clients ({names}) — which one did you mean?")
+        else:
+            client = matches[0]
         payload = {}
         if email:
             payload["email"] = email
