@@ -2,12 +2,23 @@ import { Router } from 'express'
 import { requireAuth } from '../auth/middleware.js'
 import { runOvernightForUser, runDigestForUser } from '../overnight.js'
 import { config } from '../config.js'
+import { rateLimit } from '../rateLimit.js'
 
 export const overnightRouter = Router()
 overnightRouter.use(requireAuth)
 
+// These trigger real LLM calls and (when Composio is configured) real Gmail
+// sends — unlike the rest of this router, a signed-in user could otherwise
+// loop-trigger them with no cost. Keyed per-user since requireAuth runs first.
+const overnightActionLimiter = rateLimit({
+  max: 10,
+  windowMs: 15 * 60 * 1000,
+  key: (r) => `overnight:${r.userId}`,
+  message: 'Too many requests — please wait a few minutes and try again.',
+})
+
 // Manual trigger ("Run the overnight check now") — same job the 6am cron runs.
-overnightRouter.post('/run', async (req, res) => {
+overnightRouter.post('/run', overnightActionLimiter, async (req, res) => {
   try {
     const result = await runOvernightForUser(req.userId)
     res.json(result)
@@ -18,7 +29,7 @@ overnightRouter.post('/run', async (req, res) => {
 })
 
 // Manual digest ("Email me my weekly digest now") — same as the Sunday cron.
-overnightRouter.post('/digest', async (req, res) => {
+overnightRouter.post('/digest', overnightActionLimiter, async (req, res) => {
   try {
     const result = await runDigestForUser(req.userId)
     res.json(result)
@@ -29,7 +40,7 @@ overnightRouter.post('/digest', async (req, res) => {
 })
 
 // Scan the connected Gmail inbox for client replies to reminders.
-overnightRouter.post('/check-replies', async (req, res) => {
+overnightRouter.post('/check-replies', overnightActionLimiter, async (req, res) => {
   try {
     const upstream = await fetch(`${config.aiUrl}/check-replies`, {
       method: 'POST',
