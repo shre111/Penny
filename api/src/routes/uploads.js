@@ -3,6 +3,7 @@ import multer from 'multer'
 import { ChatSession, Message } from '../models/Chat.js'
 import { requireAuth } from '../auth/middleware.js'
 import { config } from '../config.js'
+import { rateLimit } from '../rateLimit.js'
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -12,12 +13,22 @@ const upload = multer({
 export const uploadsRouter = Router()
 uploadsRouter.use(requireAuth)
 
+// Every hit runs a Gemini-vision call on up to a 10MB file — unthrottled, a
+// signed-in user could loop-trigger it for free (same class of gap already
+// fixed on the overnight run/digest/check-replies endpoints).
+const extractLimiter = rateLimit({
+  max: 20,
+  windowMs: 15 * 60 * 1000,
+  key: (r) => `extract:${r.userId}`,
+  message: 'Too many uploads — please wait a few minutes and try again.',
+})
+
 /**
  * Invoice/receipt extraction: file → AI service (Gemini vision) → structured
  * proposal persisted as an 'extraction' artifact in the chat. The user
  * confirms in the UI, which then hits POST /api/invoices with source:'document'.
  */
-uploadsRouter.post('/extract/:sessionId', upload.single('file'), async (req, res) => {
+uploadsRouter.post('/extract/:sessionId', extractLimiter, upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file received' })
   const okTypes = ['image/png', 'image/jpeg', 'image/webp', 'application/pdf']
   if (!okTypes.includes(req.file.mimetype)) {
