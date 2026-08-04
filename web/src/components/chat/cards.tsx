@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, Cell } from 'recharts'
 import { Check, ListChecks, Mail, Pencil, Play, X, FileCheck } from 'lucide-react'
 import type { InterruptAction } from '../../lib/types'
@@ -142,6 +142,15 @@ export function ApprovalCard({
 
   const resolved = status === 'resolved'
   const approvedCount = decisions.filter((d) => d.choice !== 'reject').length
+
+  // If a resume fails to reach the agent, the parent reverts this message's
+  // interrupt.status back to 'pending' so it can be retried — but submitting
+  // is local state with no promise to await (onResolve is fire-and-forget),
+  // so nothing else clears it. Without this the Send/Edit/Skip buttons stay
+  // disabled forever after a failed submit.
+  useEffect(() => {
+    if (status === 'pending') setSubmitting(false)
+  }, [status])
 
   const setChoice = (i: number, choice: EmailDecision['choice']) =>
     setDecisions((prev) => prev.map((d, idx) => (idx === i ? { ...d, choice } : d)))
