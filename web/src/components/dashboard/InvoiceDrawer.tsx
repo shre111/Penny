@@ -151,7 +151,10 @@ export function InvoiceDrawer({ invoice, onClose }: { invoice: Invoice; onClose:
                   onChange={(e) => setSharePin(e.target.value.replace(/\D/g, ''))}
                   aria-label="Optional PIN"
                 />
-                <button className="btn-primary text-sm py-1.5" onClick={() => share(sharePin)} disabled={sharing}>
+                {/* share('') means "explicitly remove PIN" and skips the clipboard copy —
+                    an empty sharePin here just means none was typed, so send undefined
+                    (no pin field) instead of taking that removal branch. */}
+                <button className="btn-primary text-sm py-1.5" onClick={() => share(sharePin || undefined)} disabled={sharing}>
                   {sharing ? <Spinner /> : 'Copy link'}
                 </button>
               </div>
