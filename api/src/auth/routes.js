@@ -84,7 +84,12 @@ authRouter.post('/google', googleLimiter, async (req, res) => {
     if (!payload.email_verified) {
       return res.status(401).json({ error: 'Your Google email address is not verified' })
     }
-    const { sub, email, name, picture } = payload
+    const { sub, name, picture } = payload
+    // Stored emails are lowercased (see User schema) — login/signup already
+    // normalize before matching; this route used the raw Google-supplied
+    // casing, so a differently-cased match would miss an existing account
+    // and then collide with its unique index on create.
+    const email = payload.email.toLowerCase().trim()
     let user = await User.findOne({ $or: [{ googleId: sub }, { email }] })
     if (!user) {
       user = await User.create({ email, name: name || email.split('@')[0], googleId: sub, avatarUrl: picture || '' })
