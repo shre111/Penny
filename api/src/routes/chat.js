@@ -77,13 +77,16 @@ chatRouter.post('/sessions/:id/resume', async (req, res) => {
   const session = await ChatSession.findOne({ _id: req.params.id, userId: req.userId })
   if (!session) return res.status(404).json({ error: 'Conversation not found' })
 
-  // Guard against double-resume: the card must still be pending
-  const msg = await Message.findOne({ _id: messageId, sessionId: session._id, 'interrupt.status': 'pending' })
+  // Guard against double-resume: atomically claim the card so two concurrent
+  // resumes (double-click, client retry) can't both pass a find-then-save
+  // check and both reach the agent — the same race already fixed this way on
+  // the email/proposal approval routes.
+  const msg = await Message.findOneAndUpdate(
+    { _id: messageId, sessionId: session._id, 'interrupt.status': 'pending' },
+    { $set: { 'interrupt.status': 'resolved', 'interrupt.decisions': decisions.map((d) => d.type) } },
+    { new: true }
+  )
   if (!msg) return res.status(409).json({ error: 'This request was already handled' })
-  msg.interrupt.status = 'resolved'
-  msg.interrupt.decisions = decisions.map((d) => d.type)
-  msg.markModified('interrupt')
-  await msg.save()
 
   session.lastMessageAt = new Date()
   await session.save()
