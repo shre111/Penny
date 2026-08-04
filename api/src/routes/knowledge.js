@@ -3,8 +3,18 @@ import multer from 'multer'
 import { KnowledgeChunk } from '../models/Knowledge.js'
 import { requireAuth, requireUserOrService } from '../auth/middleware.js'
 import { config } from '../config.js'
+import { rateLimit } from '../rateLimit.js'
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } })
+
+// Every hit runs an AI-service embedding call, unthrottled — the same class
+// of gap already fixed on the overnight and upload-extraction endpoints.
+const ingestLimiter = rateLimit({
+  max: 20,
+  windowMs: 15 * 60 * 1000,
+  key: (r) => `knowledge-ingest:${r.userId}`,
+  message: 'Too many uploads — please wait a few minutes and try again.',
+})
 
 export const knowledgeRouter = Router()
 
@@ -21,7 +31,7 @@ knowledgeRouter.get('/', requireAuth, async (req, res) => {
 })
 
 // Teach via paste or .txt/.md upload → AI service chunks + embeds → stored here
-knowledgeRouter.post('/', requireAuth, upload.single('file'), async (req, res) => {
+knowledgeRouter.post('/', requireAuth, ingestLimiter, upload.single('file'), async (req, res) => {
   let text = (req.body?.text || '').trim()
   let source = (req.body?.source || '').trim()
   if (req.file) {
