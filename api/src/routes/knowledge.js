@@ -56,10 +56,15 @@ knowledgeRouter.post('/', requireAuth, ingestLimiter, upload.single('file'), asy
   }
   const { chunks } = await upstream.json()
 
-  await KnowledgeChunk.deleteMany({ userId: req.userId, source }) // re-teaching replaces
+  // Insert the new chunks before removing the old ones (by id, captured up
+  // front) — re-teaching replaces, but if insertMany fails partway (a bad
+  // chunk, a transient Mongo blip) the previous delete-then-insert order
+  // would have already destroyed the source with nothing to show for it.
+  const staleIds = (await KnowledgeChunk.find({ userId: req.userId, source }).select('_id')).map((c) => c._id)
   await KnowledgeChunk.insertMany(
     chunks.map((c) => ({ userId: req.userId, source, chunk: c.chunk, embedding: c.embedding }))
   )
+  await KnowledgeChunk.deleteMany({ _id: { $in: staleIds } })
   res.status(201).json({ source, chunks: chunks.length })
 })
 
