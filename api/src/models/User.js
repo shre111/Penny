@@ -2,7 +2,7 @@ import mongoose from 'mongoose'
 
 const userSchema = new mongoose.Schema(
   {
-    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true, match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },
     passwordHash: { type: String }, // absent for Google-only accounts
     googleId: { type: String, index: true },
     name: { type: String, required: true, trim: true },

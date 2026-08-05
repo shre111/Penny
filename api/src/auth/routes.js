@@ -38,6 +38,11 @@ authRouter.post('/signup', signupLimiter, async (req, res) => {
   if (password.length < 8) {
     return res.status(400).json({ error: 'Password must be at least 8 characters' })
   }
+  // Only truthiness was checked before — a bogus address (e.g. "x") would
+  // pass straight through and later silently fail every reminder/digest send.
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    return res.status(400).json({ error: 'Please enter a valid email address' })
+  }
   const existing = await User.findOne({ email: email.toLowerCase().trim() })
   if (existing) return res.status(409).json({ error: 'An account with this email already exists' })
 
