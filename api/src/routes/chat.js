@@ -3,9 +3,22 @@ import { ChatSession, Message } from '../models/Chat.js'
 import { User } from '../models/User.js'
 import { requireAuth } from '../auth/middleware.js'
 import { config } from '../config.js'
+import { rateLimit } from '../rateLimit.js'
 
 export const chatRouter = Router()
 chatRouter.use(requireAuth)
+
+// Every message triggers a real multi-agent LLM run (4-7 model requests per
+// CLAUDE.md) — unlike the other LLM-triggering endpoints (overnight, upload
+// extraction, knowledge ingest), this one had no throttle at all, despite
+// being the one a runaway frontend retry loop would hit hardest. Generous
+// enough for real chatting; still stops an unbounded loop.
+const chatMessageLimiter = rateLimit({
+  max: 40,
+  windowMs: 5 * 60 * 1000,
+  key: (r) => `chat-msg:${r.userId}`,
+  message: 'Too many messages — please slow down a moment.',
+})
 
 chatRouter.get('/sessions', async (req, res) => {
   const sessions = await ChatSession.find({ userId: req.userId }).sort({ lastMessageAt: -1 }).limit(50).lean()
@@ -45,7 +58,7 @@ chatRouter.get('/sessions/:id/messages', async (req, res) => {
  * be persisted when the stream ends. SSE because EventSource can't POST —
  * the client reads this with fetch + ReadableStream.
  */
-chatRouter.post('/sessions/:id/messages', async (req, res) => {
+chatRouter.post('/sessions/:id/messages', chatMessageLimiter, async (req, res) => {
   const { content } = req.body || {}
   if (!content?.trim()) return res.status(400).json({ error: 'Say something first' })
   const session = await ChatSession.findOne({ _id: req.params.id, userId: req.userId })
