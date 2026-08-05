@@ -117,6 +117,13 @@ invoicesRouter.post('/', async (req, res) => {
 invoicesRouter.patch('/:id', async (req, res) => {
   const allowed = ['status', 'dueDate', 'notes', 'amount', 'lineItems', 'lastReminderAt']
   const updates = Object.fromEntries(Object.entries(req.body || {}).filter(([k]) => allowed.includes(k)))
+  // Money math (PDF total, balance/overdue virtuals) reads Invoice.amount, not
+  // lineItems — updating lineItems without amount would leave them silently
+  // inconsistent. Recompute the same way invoice creation does, unless the
+  // caller also gave an explicit amount.
+  if (Array.isArray(updates.lineItems) && updates.amount === undefined) {
+    updates.amount = updates.lineItems.reduce((s, li) => s + (li.quantity ?? 1) * (li.unitPrice ?? 0), 0)
+  }
   // runValidators so a bad update (e.g. status outside the enum, or a negative
   // amount) is rejected — findOneAndUpdate skips schema validation by default.
   const invoice = await Invoice.findOneAndUpdate({ _id: req.params.id, userId: req.userId }, updates, {
