@@ -330,7 +330,12 @@ export function Outbox({ emails, highlights }: { emails: EmailRecord[]; highligh
                         className="rounded-full px-2.5 py-0.5 text-[11px] font-bold bg-card border border-amber-200 text-amber-flag hover:bg-amber-50 cursor-pointer"
                         onClick={(ev) => {
                           ev.stopPropagation()
-                          api(`/api/emails/${e._id}/cancel`, { method: 'POST' }).catch(() => {})
+                          // A 409 here means the cancel window already closed and the email
+                          // went out — silently swallowing that left the owner thinking they'd
+                          // stopped a send that had, in fact, already happened.
+                          api(`/api/emails/${e._id}/cancel`, { method: 'POST' }).catch((err: any) =>
+                            setRunResult(err?.message || 'Could not cancel this send')
+                          )
                         }}
                         title="Stop this auto-send"
                       >
