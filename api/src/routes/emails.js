@@ -27,6 +27,14 @@ emailsRouter.post('/', async (req, res) => {
   if (!to || !subject || !body || !status) {
     return res.status(400).json({ error: 'to, subject, body and status are required' })
   }
+  // Every sibling free-text field in the app is capped (knowledge text 60k,
+  // proposal reason 400 chars, promise note 300) — this route had none, and
+  // it's reachable by any authenticated user, not just the service token.
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to.trim())) {
+    return res.status(400).json({ error: 'to must be a valid email address' })
+  }
+  if (subject.length > 300) return res.status(400).json({ error: 'Subject is too long (max 300 characters)' })
+  if (body.length > 20_000) return res.status(400).json({ error: 'Body is too long (max 20,000 characters)' })
   // Earned autonomy: when the owner has unlocked auto-send, overnight drafts
   // skip the approval queue — but wait in a 15-minute cancel window first.
   // (Eligibility is checked when the owner flips the switch, not per email:
