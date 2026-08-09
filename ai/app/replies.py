@@ -91,7 +91,16 @@ def check_replies(user_id: str) -> dict:
         if not sender or sender not in by_email:
             continue
         client = by_email[sender]
-        invoice = next((i for i in open_invoices if str((i.get("clientId") or {}).get("_id")) == client["_id"]), None)
+        client_invoices = [i for i in open_invoices if str((i.get("clientId") or {}).get("_id")) == client["_id"]]
+        if len(client_invoices) <= 1:
+            invoice = client_invoices[0] if client_invoices else None
+        else:
+            # More than one open invoice for this client — don't guess which one
+            # the reply is about (that would attach the wrong payment promise to
+            # the forecast). Only attribute if the invoice number is actually in
+            # the email.
+            blob = f"{mail['subject']} {mail['text']}".lower()
+            invoice = next((i for i in client_invoices if i["number"].lower() in blob), None)
         read = _read_reply(mail["text"], mail["subject"])
         if not read["mentions_payment"]:
             continue
