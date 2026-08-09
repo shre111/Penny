@@ -20,12 +20,21 @@ const chatMessageLimiter = rateLimit({
   message: 'Too many messages — please slow down a moment.',
 })
 
+// Unthrottled otherwise, a script could loop this into unbounded ChatSession
+// documents per user — the same gap already closed on message sending.
+const newSessionLimiter = rateLimit({
+  max: 30,
+  windowMs: 60 * 60 * 1000,
+  key: (r) => `chat-new-session:${r.userId}`,
+  message: 'Too many new conversations — please wait a bit and try again.',
+})
+
 chatRouter.get('/sessions', async (req, res) => {
   const sessions = await ChatSession.find({ userId: req.userId }).sort({ lastMessageAt: -1 }).limit(50).lean()
   res.json({ sessions })
 })
 
-chatRouter.post('/sessions', async (req, res) => {
+chatRouter.post('/sessions', newSessionLimiter, async (req, res) => {
   const session = await ChatSession.create({ userId: req.userId })
   res.status(201).json({ session })
 })
