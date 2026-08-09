@@ -51,6 +51,25 @@ chatRouter.get('/sessions/:id/messages', async (req, res) => {
   res.json({ messages })
 })
 
+// Persist a card resolution (e.g. an extraction card marked 'added' once its
+// invoice is created) into the artifact's own data. Without this the change
+// only ever lived in browser state — reloading or reopening the conversation
+// re-fetched the original, unresolved artifact and let the same document be
+// confirmed into a second invoice.
+chatRouter.patch('/sessions/:id/messages/:messageId/artifact/:index', async (req, res) => {
+  const session = await ChatSession.findOne({ _id: req.params.id, userId: req.userId })
+  if (!session) return res.status(404).json({ error: 'Conversation not found' })
+  const index = Number(req.params.index)
+  const message = await Message.findOne({ _id: req.params.messageId, sessionId: session._id })
+  if (!message || !Array.isArray(message.artifacts) || !message.artifacts[index]) {
+    return res.status(404).json({ error: 'Artifact not found' })
+  }
+  message.artifacts[index].data = { ...message.artifacts[index].data, ...(req.body?.patch || {}) }
+  message.markModified('artifacts')
+  await message.save()
+  res.json({ ok: true })
+})
+
 /**
  * The streaming relay. Browser POSTs a message; we persist it, then proxy the
  * AI service's SSE stream straight through while also parsing it so the final

@@ -241,6 +241,13 @@ export function useChatStream(sessionId: string | null) {
           : m
       )
     )
+    // Without persisting this, a reload re-fetched the original artifact and
+    // let the same card (e.g. an extraction) be confirmed a second time.
+    if (!sessionRef.current) return
+    api(`/api/chat/sessions/${sessionRef.current}/messages/${messageId}/artifact/${artifactIndex}`, {
+      method: 'PATCH',
+      json: { patch },
+    }).catch((err) => console.error('[patchMessageArtifact]', err))
   }, [])
 
   return { messages, streaming, busy, loadingHistory, send, resume, uploadDocument, patchMessageArtifact }
