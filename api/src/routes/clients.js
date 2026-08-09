@@ -60,7 +60,12 @@ clientsRouter.patch('/:id', async (req, res) => {
     if (clash) return res.status(409).json({ error: `A client named "${updates.name.trim()}" already exists` })
     updates.name = updates.name.trim()
   }
-  const client = await Client.findOneAndUpdate({ _id: req.params.id, userId: req.userId }, updates, { new: true })
+  // runValidators so update_client's email doesn't skip the schema's format
+  // check — findOneAndUpdate ignores schema validation by default.
+  const client = await Client.findOneAndUpdate({ _id: req.params.id, userId: req.userId }, updates, {
+    new: true,
+    runValidators: true,
+  })
   if (!client) return res.status(404).json({ error: 'Client not found' })
   emitChange(req.userId, { entity: 'client', action: 'updated', id: client._id, actor: req.actor, doc: client })
   res.json({ client })
