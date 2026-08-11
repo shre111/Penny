@@ -121,13 +121,26 @@ def build_concierge_agent(payload: dict):
                 details = {"newDueDate": new_due_date}
             elif kind == "installments":
                 plan = installments or []
+                if max_inst < 2:
+                    return json.dumps({"error": "installment plans aren't offered on this account — decline politely and offer a due-date extension instead."})
                 if not 2 <= len(plan) <= max_inst:
                     return json.dumps({"error": f"installment plans can be 2 to {max_inst} parts. Decline politely if the client wants more."})
                 total = sum(float(p.get("amount", 0)) for p in plan)
                 if abs(total - float(inv["balance"])) > max(1.0, 0.01 * float(inv["balance"])):
                     return json.dumps({"error": f"installments add up to ${total:,.2f} but the balance is ${inv['balance']:,.2f} — they must match."})
+                # Unlike the date FORMAT check this replaces, also require each date to
+                # be in the future and the plan to be in ascending order — a past or
+                # out-of-order date would go straight to the owner's approval queue and,
+                # if approved, get written onto the invoice as its new due date.
+                today = datetime.now().date()
+                prev = None
                 for p in plan:
-                    datetime.strptime(str(p.get("date", "")), "%Y-%m-%d")
+                    d = datetime.strptime(str(p.get("date", "")), "%Y-%m-%d").date()
+                    if d < today:
+                        return json.dumps({"error": "every installment date must be from today onward"})
+                    if prev is not None and d <= prev:
+                        return json.dumps({"error": "installment dates must be in ascending order"})
+                    prev = d
                 details = {"installments": plan}
             else:
                 return json.dumps({"error": "kind must be 'extension' or 'installments'"})
