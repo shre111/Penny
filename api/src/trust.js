@@ -11,8 +11,15 @@ export const TRUST_WINDOW = 10
 export const TRUST_CLEAN_NEEDED = 5
 
 export async function trustStats(userId) {
+  // origin: 'reminder' scopes this to overnight drafts the owner actually
+  // approved/edited/dismissed — without it, any interactively-composed chat
+  // email (send_email is HITL-approved but never marked editedByOwner, since
+  // the middleware substitutes edited args before the tool ever sees them)
+  // counted as an "untouched approval" too, letting unrelated chat activity
+  // unlock unsupervised auto-send.
   const recent = await Email.find({
     userId,
+    origin: 'reminder',
     status: { $in: ['sent', 'simulated', 'dismissed'] },
   })
     .sort({ updatedAt: -1 })
