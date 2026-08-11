@@ -137,14 +137,23 @@ importsRouter.post('/clients', upload.single('file'), async (req, res) => {
       skipped.push({ row: line, reason: `"${name}" already exists` })
       continue
     }
-    await Client.create({
-      userId: req.userId,
-      name,
-      contactName: pick(rec, 'contactname', 'contact', 'contactperson'),
-      email: pick(rec, 'email', 'emailaddress'),
-      phone: pick(rec, 'phone', 'phonenumber', 'tel'),
-      notes: pick(rec, 'notes', 'note'),
-    })
+    try {
+      await Client.create({
+        userId: req.userId,
+        name,
+        contactName: pick(rec, 'contactname', 'contact', 'contactperson'),
+        email: pick(rec, 'email', 'emailaddress'),
+        phone: pick(rec, 'phone', 'phonenumber', 'tel'),
+        notes: pick(rec, 'notes', 'note'),
+      })
+    } catch (err) {
+      // A bad cell (e.g. "n/a" pasted into the email column, which fails the
+      // schema's format check) must skip just this row, not throw and abort
+      // the whole import — earlier rows are already persisted, and the
+      // remaining rows would otherwise never even be attempted.
+      skipped.push({ row: line, reason: err.message.slice(0, 140) })
+      continue
+    }
     seen.add(name.toLowerCase())
     created++
   }
