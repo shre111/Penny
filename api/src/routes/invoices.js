@@ -131,6 +131,14 @@ invoicesRouter.patch('/:id', async (req, res) => {
     runValidators: true,
   }).populate('clientId', 'name email contactName')
   if (!invoice) return res.status(404).json({ error: 'Invoice not found' })
+  // Lowering amount/lineItems here (unlike /payments, which does this already)
+  // could clear the balance without ever flipping status — leaving a 'sent'
+  // invoice with balance <= 0 and a past due date, which even renders as a
+  // nonsensical negative "days until due" in the UI.
+  if (invoice.status === 'sent' && invoice.balance <= 0) {
+    invoice.status = 'paid'
+    await invoice.save()
+  }
   emitChange(req.userId, { entity: 'invoice', action: 'updated', id: invoice._id, actor: req.actor, doc: serialize(invoice) })
   res.json({ invoice: serialize(invoice) })
 })
