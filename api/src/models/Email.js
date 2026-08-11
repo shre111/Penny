@@ -17,6 +17,12 @@ const emailSchema = new mongoose.Schema(
     error: { type: String },
     sendAt: { type: Date },
     editedByOwner: { type: Boolean, default: false },
+    // 'reminder' = went through the overnight queue → owner approve/edit/dismiss
+    // decision that earned autonomy is meant to measure; 'chat' = composed and
+    // sent interactively (HITL-approved, but not that decision). provider gets
+    // overwritten once a send resolves (see approve/auto-send routes), so this
+    // is the only field that still says where an email came from after the fact.
+    origin: { type: String, enum: ['reminder', 'chat'], default: 'chat' },
   },
   { timestamps: true }
 )

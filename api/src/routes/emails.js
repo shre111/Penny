@@ -55,6 +55,11 @@ emailsRouter.post('/', async (req, res) => {
     subject,
     body,
     status: finalStatus,
+    // Only the overnight agent ever POSTs with status 'queued' — that's the
+    // approve/edit/dismiss decision earned-autonomy trust is meant to measure.
+    // Interactive chat sends (status already 'sent'/'simulated'/'failed' here)
+    // are HITL-approved but not that decision, so they stay 'chat'.
+    origin: status === 'queued' ? 'reminder' : 'chat',
     provider: provider || 'simulated',
     invoiceId: invoiceId || undefined,
     clientId: clientId || undefined,
