@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, Cell } from 'recharts'
 import { Check, ListChecks, Mail, Pencil, Play, X, FileCheck } from 'lucide-react'
 import type { InterruptAction } from '../../lib/types'
@@ -139,18 +139,23 @@ export function ApprovalCard({
   )
   const [editing, setEditing] = useState<number | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  // Tracks status across renders so we can reset `submitting` the moment it
+  // changes, without an effect. If a resume fails to reach the agent, the
+  // parent reverts this message's interrupt.status back to 'pending' so it
+  // can be retried — but submitting is local state with no promise to await
+  // (onResolve is fire-and-forget), so nothing else clears it. Doing this in
+  // an effect (the previous approach) works but triggers an extra, avoidable
+  // render (React: "Avoid calling setState() directly within an effect");
+  // adjusting state during render itself, React's recommended pattern for
+  // "reset state when a prop changes," lets it land in the same render pass.
+  const [prevStatus, setPrevStatus] = useState(status)
+  if (status !== prevStatus) {
+    setPrevStatus(status)
+    if (status === 'pending') setSubmitting(false)
+  }
 
   const resolved = status === 'resolved'
   const approvedCount = decisions.filter((d) => d.choice !== 'reject').length
-
-  // If a resume fails to reach the agent, the parent reverts this message's
-  // interrupt.status back to 'pending' so it can be retried — but submitting
-  // is local state with no promise to await (onResolve is fire-and-forget),
-  // so nothing else clears it. Without this the Send/Edit/Skip buttons stay
-  // disabled forever after a failed submit.
-  useEffect(() => {
-    if (status === 'pending') setSubmitting(false)
-  }, [status])
 
   const setChoice = (i: number, choice: EmailDecision['choice']) =>
     setDecisions((prev) => prev.map((d, idx) => (idx === i ? { ...d, choice } : d)))
