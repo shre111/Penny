@@ -66,9 +66,18 @@ export function renderInvoicePdf(invoice, user, res) {
     ? inv.lineItems
     : [{ description: inv.notes || 'Professional services', quantity: 1, unitPrice: inv.amount }]
   doc.font('Helvetica').fontSize(10)
+  // pdfkit doesn't auto-paginate explicitly-positioned text — without this, an
+  // invoice with enough line items draws rows (and then the totals/balance-due
+  // line) below the printable page with no addPage() ever called, so they're
+  // simply invisible. Leave room below the table for totals + notes + footer.
+  const bottomLimit = doc.page.height - 140
   for (const li of items) {
-    doc.fillColor(INK).text(li.description, cols.desc + 8, y, { width: cols.qty - cols.desc - 24 })
     const rowH = Math.max(doc.heightOfString(li.description, { width: cols.qty - cols.desc - 24 }), 12)
+    if (y + rowH + 10 > bottomLimit) {
+      doc.addPage()
+      y = 54
+    }
+    doc.fillColor(INK).text(li.description, cols.desc + 8, y, { width: cols.qty - cols.desc - 24 })
     doc.fillColor(SOFT)
     doc.text(String(li.quantity), cols.qty, y, { width: 50, align: 'right' })
     doc.text(money(li.unitPrice, inv.currency), cols.unit, y, { width: 60, align: 'right' })
@@ -77,7 +86,11 @@ export function renderInvoicePdf(invoice, user, res) {
     doc.moveTo(54, y - 5).lineTo(right, y - 5).lineWidth(0.5).strokeColor('#e7e0d4').stroke()
   }
 
-  // totals
+  // totals — start a fresh page if they wouldn't fit under the last row
+  if (y + 60 > bottomLimit) {
+    doc.addPage()
+    y = 54
+  }
   y += 8
   const totalLine = (label, value, bold = false, color = INK) => {
     doc.font(bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(bold ? 12 : 10).fillColor(color)
