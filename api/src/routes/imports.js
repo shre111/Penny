@@ -200,14 +200,6 @@ importsRouter.post('/invoices', upload.single('file'), async (req, res) => {
       continue
     }
 
-    let clientId = byName.get(clientName.toLowerCase())
-    if (!clientId) {
-      const c = await Client.create({ userId: req.userId, name: clientName })
-      clientId = c._id
-      byName.set(clientName.toLowerCase(), clientId)
-      clientsCreated++
-    }
-
     const status = ['draft', 'sent', 'paid', 'void'].includes(statusRaw) ? statusRaw : 'sent'
     const dueDate = new Date(dueRaw)
     // A row marked 'paid' carries no payment record, so without this the balance
@@ -217,19 +209,35 @@ importsRouter.post('/invoices', upload.single('file'), async (req, res) => {
     // the collected/cashflow totals stay honest.
     const payments = status === 'paid' ? [{ amount, date: dueDate, method: 'imported' }] : []
 
-    await Invoice.create({
-      userId: req.userId,
-      clientId,
-      number: await nextInvoiceNumber(req.userId),
-      amount,
-      currency: 'USD',
-      issueDate: issueRaw && !Number.isNaN(Date.parse(issueRaw)) ? new Date(issueRaw) : new Date(),
-      dueDate,
-      status,
-      payments,
-      notes,
-      source: 'manual',
-    })
+    // Same reasoning as the client import above: one bad row (or a transient
+    // Mongo hiccup — this loop can be a thousand sequential round-trips) must
+    // skip just this row, not throw and abort the whole batch with no tally,
+    // no emitChange, and the dashboard silently drifted from the database.
+    try {
+      let clientId = byName.get(clientName.toLowerCase())
+      if (!clientId) {
+        const c = await Client.create({ userId: req.userId, name: clientName })
+        clientId = c._id
+        byName.set(clientName.toLowerCase(), clientId)
+        clientsCreated++
+      }
+      await Invoice.create({
+        userId: req.userId,
+        clientId,
+        number: await nextInvoiceNumber(req.userId),
+        amount,
+        currency: 'USD',
+        issueDate: issueRaw && !Number.isNaN(Date.parse(issueRaw)) ? new Date(issueRaw) : new Date(),
+        dueDate,
+        status,
+        payments,
+        notes,
+        source: 'manual',
+      })
+    } catch (err) {
+      skipped.push({ row: line, reason: err.message.slice(0, 140) })
+      continue
+    }
     created++
   }
 
