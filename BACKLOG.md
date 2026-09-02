@@ -38,3 +38,17 @@ One branch + PR per item; tick the box when it merges.
 - [x] 19. Export invoices and clients to CSV — the mirror of the existing import.
 - [x] 20. Add a Void filter to the invoice table; voided invoices are only reachable under "All".
 - [x] 21. `npm run lint` fails on main: the share-link fix in #95 left a `let url = ''` that trips `no-useless-assignment`.
+
+## Second pass — 2026-09-02
+
+- [ ] 22. `ai/app/config.py` has the same dev-fallback secret hole #98 closed on the Node side: an AI service started without `SERVICE_TOKEN` accepts the public default.
+- [ ] 23. `ChatPanel` never catches its session calls — a failed bootstrap, New conversation or Delete throws an unhandled rejection and the UI just doesn't move.
+- [ ] 24. `useSpeechInput.doStart()` replaces `recRef.current` without aborting the previous recognizer.
+- [ ] 25. `SpotlightKey` declares a `'forecast'` target nothing emits and nothing renders.
+- [ ] 26. A bad `MONGODB_URI` takes 30s to fail and exits with a raw driver stack.
+- [ ] 27. `NodeAPIError` drops the HTTP status, so agent tools can't tell "not found" from "server broke".
+- [ ] 28. `POST /api/memories` counts the whole collection on every save — the same waste #114 removed from the activity trail.
+- [ ] 29. `ChartCard` renders an empty axis frame when the agent returns no rows, where the dashboard charts show a message.
+- [ ] 30. `ActivityFeed`'s relative times never re-render — a feed left open says "just now" indefinitely.
+- [ ] 31. Unknown `/api/*` paths fall through to Express's HTML 404, which `api()` can't parse as JSON.
+
