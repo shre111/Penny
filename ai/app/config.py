@@ -7,9 +7,21 @@ _here = Path(__file__).resolve().parent.parent
 load_dotenv(_here / ".env")
 load_dotenv(_here.parent / ".env")
 
+IS_PROD = os.getenv("PENNY_ENV", os.getenv("NODE_ENV", "")).lower() == "production"
+
+
+def _required(name: str, dev_fallback: str) -> str:
+    value = os.getenv(name)
+    if value:
+        return value
+    if IS_PROD:
+        raise RuntimeError(f"Missing required env var {name} (no fallback in production)")
+    return dev_fallback
+
+
 NODE_API_URL = os.getenv("NODE_API_URL", "http://localhost:4001")
-SERVICE_TOKEN = os.getenv("SERVICE_TOKEN", "dev-service-token")
-MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://127.0.0.1:27017/penny")
+SERVICE_TOKEN = _required("SERVICE_TOKEN", "dev-service-token")
+MONGODB_URI = _required("MONGODB_URI", "mongodb://127.0.0.1:27017/penny")
 
 # Provider-agnostic: "google_genai:gemini-3-flash-preview", "openai:gpt-4.1-mini", ...
 PENNY_MODEL = os.getenv("PENNY_MODEL", "google_genai:gemini-3-flash-preview")
