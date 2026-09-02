@@ -41,7 +41,7 @@ One branch + PR per item; tick the box when it merges.
 
 ## Second pass — 2026-09-02
 
-- [ ] 22. `ai/app/config.py` has the same dev-fallback secret hole #98 closed on the Node side: an AI service started without `SERVICE_TOKEN` accepts the public default.
+- [x] 22. `ai/app/config.py` has the same dev-fallback secret hole #98 closed on the Node side: an AI service started without `SERVICE_TOKEN` accepts the public default.
 - [ ] 23. `ChatPanel` never catches its session calls — a failed bootstrap, New conversation or Delete throws an unhandled rejection and the UI just doesn't move.
 - [ ] 24. `useSpeechInput.doStart()` replaces `recRef.current` without aborting the previous recognizer.
 - [ ] 25. `SpotlightKey` declares a `'forecast'` target nothing emits and nothing renders.
