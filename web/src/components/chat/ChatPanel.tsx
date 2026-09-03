@@ -53,6 +53,7 @@ const STARTER_CHIPS = [
 export function ChatPanel() {
   const { user } = useAuth()
   const [sessions, setSessions] = useState<ChatSession[]>([])
+  const [sessionError, setSessionError] = useState('')
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [showSessions, setShowSessions] = useState(false)
   const [briefing, setBriefing] = useState<Briefing | null>(null)
@@ -154,16 +155,18 @@ export function ChatPanel() {
 
   // load (or start) a conversation
   useEffect(() => {
-    api<{ sessions: ChatSession[] }>('/api/chat/sessions').then(async (d) => {
-      if (d.sessions.length > 0) {
-        setSessions(d.sessions)
-        setSessionId(d.sessions[0]._id)
-      } else {
-        const created = await api<{ session: ChatSession }>('/api/chat/sessions', { method: 'POST' })
-        setSessions([created.session])
-        setSessionId(created.session._id)
-      }
-    })
+    api<{ sessions: ChatSession[] }>('/api/chat/sessions')
+      .then(async (d) => {
+        if (d.sessions.length > 0) {
+          setSessions(d.sessions)
+          setSessionId(d.sessions[0]._id)
+        } else {
+          const created = await api<{ session: ChatSession }>('/api/chat/sessions', { method: 'POST' })
+          setSessions([created.session])
+          setSessionId(created.session._id)
+        }
+      })
+      .catch((err) => setSessionError(err?.message || 'Could not open your conversations'))
     loadBriefing()
   }, [loadBriefing])
 
@@ -174,25 +177,35 @@ export function ChatPanel() {
   }, [messages, streaming, draftsSnapshot, proposalsSnapshot])
 
   const newConversation = async () => {
-    const created = await api<{ session: ChatSession }>('/api/chat/sessions', { method: 'POST' })
-    setSessions((prev) => [created.session, ...prev])
-    setSessionId(created.session._id)
-    setShowSessions(false)
-    loadBriefing() // the fresh conversation's welcome should reflect the latest books
+    setSessionError('')
+    try {
+      const created = await api<{ session: ChatSession }>('/api/chat/sessions', { method: 'POST' })
+      setSessions((prev) => [created.session, ...prev])
+      setSessionId(created.session._id)
+      setShowSessions(false)
+      loadBriefing() // the fresh conversation's welcome should reflect the latest books
+    } catch (err: any) {
+      setSessionError(err?.message || 'Could not start a new conversation')
+    }
   }
 
   const deleteSession = async (id: string) => {
-    await api(`/api/chat/sessions/${id}`, { method: 'DELETE' })
-    const next = sessions.filter((s) => s._id !== id)
-    if (next.length === 0) {
-      // never leave the composer without a session to send to — start a fresh one
-      const created = await api<{ session: ChatSession }>('/api/chat/sessions', { method: 'POST' })
-      setSessions([created.session])
-      setSessionId(created.session._id)
-      return
+    setSessionError('')
+    try {
+      await api(`/api/chat/sessions/${id}`, { method: 'DELETE' })
+      const next = sessions.filter((s) => s._id !== id)
+      if (next.length === 0) {
+        // never leave the composer without a session to send to — start a fresh one
+        const created = await api<{ session: ChatSession }>('/api/chat/sessions', { method: 'POST' })
+        setSessions([created.session])
+        setSessionId(created.session._id)
+        return
+      }
+      setSessions(next)
+      if (sessionId === id) setSessionId(next[0]._id) // pure updates, no setState inside an updater
+    } catch (err: any) {
+      setSessionError(err?.message || 'Could not remove that conversation')
     }
-    setSessions(next)
-    if (sessionId === id) setSessionId(next[0]._id) // pure updates, no setState inside an updater
   }
 
   const submit = useCallback(
@@ -365,6 +378,7 @@ export function ChatPanel() {
 
       {/* composer */}
       <footer className="border-t border-line p-3">
+        {sessionError && <p className="text-xs text-danger-600 mb-2">{sessionError}</p>}
         <div className="flex items-end gap-2 rounded-2xl border border-line bg-paper/60 focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-100 px-3 py-2">
           <button
             className="p-1.5 text-ink-soft hover:text-copper-600 cursor-pointer shrink-0"
