@@ -35,6 +35,7 @@ export function useSpeechInput(onTranscript: (text: string, isFinal: boolean) =>
   }
 
   function doStart() {
+    recRef.current?.abort?.()
     const rec = new Recognition()
     rec.lang = navigator.language || 'en-US'
     rec.interimResults = true
