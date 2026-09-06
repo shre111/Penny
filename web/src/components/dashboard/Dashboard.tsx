@@ -112,7 +112,11 @@ export function Dashboard() {
           <div className={`grid lg:grid-cols-2 gap-4 ${spotCls('charts')}`}>
             {charts.data && <AgingChart data={charts.data.aging} />}
             {charts.data && <CashflowChart data={charts.data.cashflow} />}
-            {forecast.data && <ForecastCard forecast={forecast.data.forecast} />}
+            {forecast.data && (
+              <div className={`lg:col-span-2 ${spotCls('forecast')}`}>
+                <ForecastCard forecast={forecast.data.forecast} />
+              </div>
+            )}
           </div>
           <div className={spotCls('invoices')}>
             <InvoiceTable invoices={invoices.data.invoices} highlights={invoices.highlights} />
