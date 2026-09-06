@@ -44,7 +44,7 @@ One branch + PR per item; tick the box when it merges.
 - [x] 22. `ai/app/config.py` has the same dev-fallback secret hole #98 closed on the Node side: an AI service started without `SERVICE_TOKEN` accepts the public default.
 - [x] 23. `ChatPanel` never catches its session calls — a failed bootstrap, New conversation or Delete throws an unhandled rejection and the UI just doesn't move.
 - [x] 24. `useSpeechInput.doStart()` replaces `recRef.current` without aborting the previous recognizer.
-- [ ] 25. `SpotlightKey` declares a `'forecast'` target nothing emits and nothing renders.
+- [x] 25. `SpotlightKey` declares a `'forecast'` target nothing emits and nothing renders.
 - [ ] 26. A bad `MONGODB_URI` takes 30s to fail and exits with a raw driver stack.
 - [ ] 27. `NodeAPIError` drops the HTTP status, so agent tools can't tell "not found" from "server broke".
 - [ ] 28. `POST /api/memories` counts the whole collection on every save — the same waste #114 removed from the activity trail.
