@@ -13,6 +13,7 @@ const TOOL_TARGET: Record<string, SpotlightKey> = {
   get_business_metrics: 'kpis',
   make_chart: 'charts',
   record_payment_promise: 'invoices',
+  make_rescue_plan: 'forecast',
 }
 
 export function spotlightForTool(tool: string): SpotlightKey | null {
