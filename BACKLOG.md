@@ -45,7 +45,7 @@ One branch + PR per item; tick the box when it merges.
 - [x] 23. `ChatPanel` never catches its session calls — a failed bootstrap, New conversation or Delete throws an unhandled rejection and the UI just doesn't move.
 - [x] 24. `useSpeechInput.doStart()` replaces `recRef.current` without aborting the previous recognizer.
 - [x] 25. `SpotlightKey` declares a `'forecast'` target nothing emits and nothing renders.
-- [ ] 26. A bad `MONGODB_URI` takes 30s to fail and exits with a raw driver stack.
+- [x] 26. A bad `MONGODB_URI` takes 30s to fail and exits with a raw driver stack.
 - [ ] 27. `NodeAPIError` drops the HTTP status, so agent tools can't tell "not found" from "server broke".
 - [ ] 28. `POST /api/memories` counts the whole collection on every save — the same waste #114 removed from the activity trail.
 - [ ] 29. `ChartCard` renders an empty axis frame when the agent returns no rows, where the dashboard charts show a message.
