@@ -43,7 +43,10 @@ export function InvoiceTable({ invoices, highlights }: { invoices: Invoice[]; hi
       setCopiedId(inv._id)
       setTimeout(() => setCopiedId(null), 2000)
     } catch {
-      /* clipboard denied — no-op */
+      // The link exists either way — only the copy was refused (an insecure
+      // origin, or a browser that wants a permission first). Point at the
+      // drawer, which shows the link itself.
+      setShareError(`${inv.number}'s client link is ready, but your browser blocked the copy — open the invoice to copy it.`)
     }
   }
   // urgency first: overdue (latest first), then awaiting by due date, drafts, then paid history
