@@ -9,7 +9,13 @@ from . import config
 
 
 class NodeAPIError(Exception):
-    pass
+    def __init__(self, message: str, status: int = 0):
+        super().__init__(message)
+        self.status = status
+
+    @property
+    def not_found(self) -> bool:
+        return self.status == 404
 
 
 # One shared client → connection pooling + keep-alive across tool calls, instead
@@ -30,5 +36,5 @@ def request(user_id: str, method: str, path: str, json: dict | None = None, para
             detail = resp.json().get("error", resp.text)
         except Exception:
             detail = resp.text[:200]
-        raise NodeAPIError(detail)
+        raise NodeAPIError(detail, resp.status_code)
     return resp.json()
