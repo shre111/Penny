@@ -58,13 +58,20 @@ proposalsRouter.post('/:id/approve', requireAuth, async (req, res) => {
     { new: true }
   )
   if (!proposal) return res.status(409).json({ error: 'This request was already handled' })
-  const invoice = await Invoice.findOne({ _id: proposal.invoiceId, userId: req.userId })
-  if (!invoice) {
-    // invoice vanished between request and approval — undo the claim so the
-    // proposal isn't stranded 'approved' with nothing applied
+  // Put the proposal back in the owner's queue when the approval can't actually
+  // be carried out — otherwise it reads 'approved' with nothing applied, and
+  // can't be retried because it's no longer 'pending'. Same helper shape as the
+  // undo route in activities.js.
+  const revertClaim = async () => {
     proposal.status = 'pending'
     proposal.decidedAt = undefined
-    await proposal.save()
+    await proposal.save().catch(() => {})
+  }
+
+  const invoice = await Invoice.findOne({ _id: proposal.invoiceId, userId: req.userId })
+  if (!invoice) {
+    // invoice vanished between request and approval
+    await revertClaim()
     return res.status(404).json({ error: 'Invoice not found' })
   }
 
