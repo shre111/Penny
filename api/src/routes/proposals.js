@@ -75,13 +75,27 @@ proposalsRouter.post('/:id/approve', requireAuth, async (req, res) => {
     return res.status(404).json({ error: 'Invoice not found' })
   }
 
+  // `details` is a Mixed field. The concierge tool checks its own arguments, but
+  // POST /api/proposals stores whatever it is handed, so this is the first place
+  // the values are actually validated. An unreadable date would otherwise reach
+  // invoice.save() as an Invalid Date and throw.
   if (proposal.type === 'extension') {
-    invoice.dueDate = new Date(proposal.details.newDueDate)
+    const newDueDate = new Date(proposal.details?.newDueDate)
+    if (Number.isNaN(newDueDate.getTime())) {
+      await revertClaim()
+      return res.status(400).json({ error: "This request's new due date is unreadable — ask your client to send it again" })
+    }
+    invoice.dueDate = newDueDate
     invoice.notes = `${invoice.notes ? invoice.notes + ' · ' : ''}Extension agreed via Penny`
   } else {
-    const plan = (proposal.details.installments || []).map((i) => ({ amount: i.amount, date: new Date(i.date) }))
+    const plan = (proposal.details?.installments || []).map((i) => ({ amount: Number(i?.amount), date: new Date(i?.date) }))
+    const unusable = (i) => !Number.isFinite(i.amount) || i.amount <= 0 || Number.isNaN(i.date.getTime())
+    if (!plan.length || plan.some(unusable)) {
+      await revertClaim()
+      return res.status(400).json({ error: "This payment plan's amounts or dates are unreadable — ask your client to send it again" })
+    }
     invoice.installmentPlan = plan
-    if (plan.length) invoice.dueDate = plan[0].date // next money expected = first installment
+    invoice.dueDate = plan[0].date // next money expected = first installment
     invoice.notes = `${invoice.notes ? invoice.notes + ' · ' : ''}Installment plan agreed via Penny`
   }
   await invoice.save()
