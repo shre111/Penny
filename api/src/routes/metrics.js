@@ -18,6 +18,23 @@ async function loadInvoices(userId) {
 }
 
 /**
+ * When was an invoice actually settled? The LAST-DATED payment on it — not the
+ * last-recorded one. Payments are appended in the order they're entered
+ * (POST /:id/payments takes an explicit `date`, and the CSV import back-dates
+ * every 'paid' row to its due date), so the tail of the array is regularly an
+ * older date than one sitting earlier in it.
+ */
+function settledOn(payments) {
+  let latest = null
+  for (const p of payments || []) {
+    const t = new Date(p.date).getTime()
+    if (Number.isNaN(t)) continue
+    if (latest === null || t > latest) latest = t
+  }
+  return latest
+}
+
+/**
  * Payment personalities: how late does each client actually pay?
  * avgDaysLate = mean(final payment date − due date) over their paid invoices.
  * Needs ≥2 paid invoices before we claim to know someone's habits.
@@ -26,9 +43,9 @@ export async function paymentBehavior(userId) {
   const paid = await Invoice.find({ userId, status: 'paid' }).lean()
   const samples = {}
   for (const inv of paid) {
-    const last = inv.payments?.length ? inv.payments[inv.payments.length - 1].date : null
-    if (!last || !inv.dueDate) continue
-    const days = Math.round((new Date(last) - new Date(inv.dueDate)) / 86400000)
+    const last = settledOn(inv.payments)
+    if (last === null || !inv.dueDate) continue
+    const days = Math.round((last - new Date(inv.dueDate)) / 86400000)
     const key = String(inv.clientId)
     ;(samples[key] ||= []).push(days)
   }
