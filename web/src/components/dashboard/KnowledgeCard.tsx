@@ -19,7 +19,9 @@ export function KnowledgeCard() {
   const [name, setName] = useState('')
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
-  const [note, setNote] = useState('')
+  // Successes and failures share one slot under the buttons, so the note has to
+  // carry its own tone — otherwise a refusal renders in the confirmation colour.
+  const [note, setNote] = useState<{ text: string; tone: 'ok' | 'error' } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const load = () => {
@@ -31,7 +33,7 @@ export function KnowledgeCard() {
 
   const teach = async (file?: File) => {
     setBusy(true)
-    setNote('')
+    setNote(null)
     try {
       let result: { source: string; chunks: number }
       if (file) {
@@ -45,24 +47,24 @@ export function KnowledgeCard() {
       } else {
         result = await api('/api/knowledge', { method: 'POST', json: { source: name.trim(), text: text.trim() } })
       }
-      setNote(`Learned "${result.source}" — ${result.chunks} passage${result.chunks === 1 ? '' : 's'} ✓`)
+      setNote({ text: `Learned "${result.source}" — ${result.chunks} passage${result.chunks === 1 ? '' : 's'} ✓`, tone: 'ok' })
       setName('')
       setText('')
       load()
     } catch (err: any) {
-      setNote(err.message)
+      setNote({ text: err.message, tone: 'error' })
     } finally {
       setBusy(false)
     }
   }
 
   const forget = async (source: string) => {
-    setNote('')
+    setNote(null)
     try {
       await api(`/api/knowledge/${encodeURIComponent(source)}`, { method: 'DELETE' })
     } catch (err: any) {
       // surface it (e.g. already removed → 404) instead of an unhandled rejection
-      setNote(err?.message || "Couldn't remove that source")
+      setNote({ text: err?.message || "Couldn't remove that source", tone: 'error' })
     } finally {
       load()
     }
@@ -110,7 +112,11 @@ export function KnowledgeCard() {
             e.target.value = ''
           }}
         />
-        {note && <span className="text-xs font-medium text-brand-700">{note}</span>}
+        {note && (
+          <span className={`text-xs font-medium ${note.tone === 'error' ? 'text-danger-600' : 'text-brand-700'}`}>
+            {note.text}
+          </span>
+        )}
       </div>
       {sources.length > 0 && (
         <ul className="mt-3 divide-y divide-line/60 border-t border-line/60">
