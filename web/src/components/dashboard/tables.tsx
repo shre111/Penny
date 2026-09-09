@@ -23,16 +23,30 @@ const SOURCE_BADGE: Record<string, { label: string; icon: React.ReactNode }> = {
 export function InvoiceTable({ invoices, highlights }: { invoices: Invoice[]; highlights: Set<string> }) {
   const [filter, setFilter] = useState<'all' | 'overdue' | 'open' | 'paid' | 'draft'>('all')
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [shareError, setShareError] = useState('')
   const [drawerInvoice, setDrawerInvoice] = useState<Invoice | null>(null)
 
   const shareInvoice = async (inv: Invoice) => {
+    setShareError('')
+    // Minting the link and copying it fail for different reasons and deserve
+    // different answers — the drawer's share button already splits them.
+    let url = ''
     try {
       const r = await api<{ url: string }>(`/api/invoices/${inv._id}/share`, { method: 'POST' })
-      await navigator.clipboard.writeText(`${window.location.origin}${r.url}`)
+      url = `${window.location.origin}${r.url}`
+    } catch (e: any) {
+      setShareError(e?.message || `Could not create the client link for ${inv.number}`)
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(url)
       setCopiedId(inv._id)
       setTimeout(() => setCopiedId(null), 2000)
     } catch {
-      /* clipboard denied — no-op */
+      // The link exists either way — only the copy was refused (an insecure
+      // origin, or a browser that wants a permission first). Point at the
+      // drawer, which shows the link itself.
+      setShareError(`${inv.number}'s client link is ready, but your browser blocked the copy — open the invoice to copy it.`)
     }
   }
   // urgency first: overdue (latest first), then awaiting by due date, drafts, then paid history
@@ -76,6 +90,7 @@ export function InvoiceTable({ invoices, highlights }: { invoices: Invoice[]; hi
           ))}
         </div>
       </div>
+      {shareError && <p className="px-4 pb-2 text-xs text-danger-600">{shareError}</p>}
       {filtered.length === 0 ? (
         <EmptyState icon={<FileText className="h-8 w-8" />} title="No invoices here yet">
           Ask Penny to log one — try “Log an invoice for Acme, $450, due next Friday”.
