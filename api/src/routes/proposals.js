@@ -98,7 +98,17 @@ proposalsRouter.post('/:id/approve', requireAuth, async (req, res) => {
     invoice.dueDate = plan[0].date // next money expected = first installment
     invoice.notes = `${invoice.notes ? invoice.notes + ' · ' : ''}Installment plan agreed via Penny`
   }
-  await invoice.save()
+  // Anything that still fails while writing the invoice (a schema violation, a
+  // dropped connection) must not leave the proposal claimed 'approved' with the
+  // books untouched: the owner would read it as settled and have no way to try
+  // again, since it is no longer 'pending'. Rethrow so the app's JSON error
+  // handler maps it as usual (CastError/ValidationError → 400, else 500).
+  try {
+    await invoice.save()
+  } catch (err) {
+    await revertClaim()
+    throw err
+  }
   await invoice.populate('clientId', 'name email contactName')
 
   // proposal was already marked 'approved' by the atomic claim above
