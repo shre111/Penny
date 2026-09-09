@@ -128,7 +128,7 @@ authRouter.get('/config', (_req, res) => {
 
 // Earned autonomy: flip auto-send on/off — ON requires the trust bar to be met
 authRouter.patch('/autonomy', requireAuth, async (req, res) => {
-  const { trustStats } = await import('../trust.js')
+  const { trustStats, TRUST_WINDOW } = await import('../trust.js')
   const user = await User.findById(req.userId)
   if (!user) return res.status(401).json({ error: 'Account not found' })
   const wantOn = Boolean(req.body?.autoSendReminders)
@@ -136,7 +136,11 @@ authRouter.patch('/autonomy', requireAuth, async (req, res) => {
     const stats = await trustStats(req.userId)
     if (!stats.eligible) {
       return res.status(409).json({
-        error: `Penny hasn't earned this yet — she needs ${stats.cleanNeeded} untouched approvals in your last ${stats.window || 0} decisions (currently ${stats.clean}, with ${stats.skipped} skipped).`,
+        // TRUST_WINDOW is the rule ("in your last 10 decisions"). stats.window is
+        // how many decisions actually exist — using it made the bar read as
+        // impossible while the owner was still building a history, e.g. "she
+        // needs 5 untouched approvals in your last 3 decisions".
+        error: `Penny hasn't earned this yet — she needs ${stats.cleanNeeded} untouched approvals in your last ${TRUST_WINDOW} decisions (currently ${stats.clean}, with ${stats.skipped} skipped).`,
       })
     }
   }

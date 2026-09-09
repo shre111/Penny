@@ -33,7 +33,10 @@ export async function trustStats(userId) {
 
   const user = await User.findById(userId)
   return {
-    window: recent.length,
+    // How many reminder decisions are actually on record (0–TRUST_WINDOW). This
+    // is NOT the rule's window size — that's the exported TRUST_WINDOW. The two
+    // were confused once already in the autonomy refusal message.
+    decisions: recent.length,
     clean,
     edited,
     skipped,
