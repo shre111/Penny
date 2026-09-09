@@ -43,9 +43,9 @@ export async function paymentBehavior(userId) {
   const paid = await Invoice.find({ userId, status: 'paid' }).lean()
   const samples = {}
   for (const inv of paid) {
-    const last = inv.payments?.length ? inv.payments[inv.payments.length - 1].date : null
-    if (!last || !inv.dueDate) continue
-    const days = Math.round((new Date(last) - new Date(inv.dueDate)) / 86400000)
+    const last = settledOn(inv.payments)
+    if (last === null || !inv.dueDate) continue
+    const days = Math.round((last - new Date(inv.dueDate)) / 86400000)
     const key = String(inv.clientId)
     ;(samples[key] ||= []).push(days)
   }
