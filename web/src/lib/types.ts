@@ -104,7 +104,7 @@ export interface Insight {
 }
 
 export interface TrustStats {
-  window: number
+  decisions: number
   clean: number
   edited: number
   skipped: number
