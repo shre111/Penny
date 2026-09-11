@@ -47,7 +47,7 @@ One branch + PR per item; tick the box when it merges.
 - [x] 25. `SpotlightKey` declares a `'forecast'` target nothing emits and nothing renders.
 - [x] 26. A bad `MONGODB_URI` takes 30s to fail and exits with a raw driver stack.
 - [x] 27. `NodeAPIError` drops the HTTP status, so agent tools can't tell "not found" from "server broke".
-- [ ] 28. `POST /api/memories` counts the whole collection on every save — the same waste #114 removed from the activity trail.
+- [x] 28. `POST /api/memories` counts the whole collection on every save — the same waste #114 removed from the activity trail.
 - [ ] 29. `ChartCard` renders an empty axis frame when the agent returns no rows, where the dashboard charts show a message.
 - [ ] 30. `ActivityFeed`'s relative times never re-render — a feed left open says "just now" indefinitely.
 - [ ] 31. Unknown `/api/*` paths fall through to Express's HTML 404, which `api()` can't parse as JSON.
