@@ -10,6 +10,25 @@ memoriesRouter.use(requireUserOrService)
 // grows forever while GET only ever surfaces the newest 50, so older facts
 // become permanently invisible clutter instead of actually being dropped.
 const MAX_MEMORIES_PER_USER = 200
+const TRIM_EVERY = 25
+const writesSinceTrim = new Map()
+
+async function trimMemories(userId) {
+  const key = String(userId)
+  const pending = (writesSinceTrim.get(key) || 0) + 1
+  if (pending < TRIM_EVERY) {
+    writesSinceTrim.set(key, pending)
+    return
+  }
+  writesSinceTrim.set(key, 0)
+  const count = await Memory.countDocuments({ userId })
+  if (count <= MAX_MEMORIES_PER_USER) return
+  const stale = await Memory.find({ userId })
+    .sort({ createdAt: 1 })
+    .limit(count - MAX_MEMORIES_PER_USER)
+    .select('_id')
+  await Memory.deleteMany({ _id: { $in: stale.map((m) => m._id) } })
+}
 
 memoriesRouter.get('/', async (req, res) => {
   // Return the 50 MOST RECENT memories, oldest→newest. Consumers (the agent's
@@ -34,14 +53,7 @@ memoriesRouter.post('/', async (req, res) => {
   const existing = await Memory.findOne({ userId: req.userId, fact: { $regex: `^${escapeRegex(trimmed)}$`, $options: 'i' } })
   if (existing) return res.json({ memory: existing, deduped: true })
   const memory = await Memory.create({ userId: req.userId, fact: trimmed })
-  const count = await Memory.countDocuments({ userId: req.userId })
-  if (count > MAX_MEMORIES_PER_USER) {
-    const stale = await Memory.find({ userId: req.userId })
-      .sort({ createdAt: 1 })
-      .limit(count - MAX_MEMORIES_PER_USER)
-      .select('_id')
-    await Memory.deleteMany({ _id: { $in: stale.map((m) => m._id) } })
-  }
+  await trimMemories(req.userId)
   res.status(201).json({ memory })
 })
 
