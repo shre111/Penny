@@ -53,11 +53,20 @@ const AGING_COLORS = ['#3a8c61', '#b88323', '#c2543e', '#82492a']
 export function ChartCard({ data }: { data: { kind: string; title: string; data: any[] } }) {
   const c = useChartColors()
   const tooltip = useTooltipStyle()
+  const rows = data.data || []
+  if (rows.length === 0) {
+    return (
+      <div className="card p-4 mt-2 animate-pop-in">
+        <h4 className="font-semibold text-sm mb-1">{data.title}</h4>
+        <p className="text-sm text-ink-soft py-6 text-center">Nothing to chart here yet.</p>
+      </div>
+    )
+  }
   return (
     <div className="card p-4 mt-2 animate-pop-in">
       <h4 className="font-semibold text-sm mb-3">{data.title}</h4>
       <ResponsiveContainer width="100%" height={190}>
-        <BarChart data={data.data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+        <BarChart data={rows} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke={c.grid} vertical={false} />
           <XAxis dataKey="name" tick={{ fontSize: 10.5, fill: c.tick }} axisLine={false} tickLine={false} interval={0} />
           <YAxis tickFormatter={fmtAxisMoney} tick={{ fontSize: 10.5, fill: c.tick }} axisLine={false} tickLine={false} width={42} />
@@ -72,7 +81,7 @@ export function ChartCard({ data }: { data: { kind: string; title: string; data:
             <Bar dataKey="value" name="Expected" fill="#5ba980" radius={[5, 5, 0, 0]} maxBarSize={30} />
           ) : (
             <Bar dataKey="value" radius={[5, 5, 0, 0]} maxBarSize={48}>
-              {data.data.map((_: any, i: number) => (
+              {rows.map((_: any, i: number) => (
                 <Cell key={i} fill={AGING_COLORS[i % AGING_COLORS.length]} />
               ))}
             </Bar>
