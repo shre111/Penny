@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FileText, History, Mail, RotateCcw, Users } from 'lucide-react'
 import { api } from '../../lib/api'
 import { CoinMark, EmptyState, Spinner } from '../ui'
@@ -35,6 +35,12 @@ function timeAgo(iso: string): string {
 export function ActivityFeed({ activities, refetch }: { activities: ActivityItem[]; refetch: () => void }) {
   const [busy, setBusy] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [, setTick] = useState(0)
+
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60_000)
+    return () => clearInterval(id)
+  }, [])
 
   const undo = async (a: ActivityItem) => {
     setBusy(a._id)
