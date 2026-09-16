@@ -60,6 +60,8 @@ app.use('/api/overnight', overnightRouter)
 app.get('/api/invoices/:id/pdf', requireAuth, invoicePdfHandler)
 app.get('/api/trust', requireAuth, async (req, res) => res.json(await trustStats(req.userId)))
 
+app.use('/api', (_req, res) => res.status(404).json({ error: 'No such endpoint' }))
+
 // Production: serve the built SPA from the same origin
 const webDist = path.join(__dirname, '..', '..', 'web', 'dist')
 app.use(express.static(webDist))
