@@ -51,6 +51,8 @@ export function emitChange(userId, { entity, action, id, actor = 'user', doc = n
 // mutation writes an Activity row forever with no trim, while GET only ever
 // shows the newest 60. Cap it the same way.
 const MAX_ACTIVITIES_PER_USER = 500
+const TRIM_EVERY = 50
+const writesSinceTrim = new Map()
 
 async function recordActivity(userId, { entity, action, id, actor, doc }) {
   if (action === 'reloaded') return // bulk demo reloads aren't individual actions
@@ -66,6 +68,13 @@ async function recordActivity(userId, { entity, action, id, actor, doc }) {
 }
 
 async function trimActivities(Activity, userId) {
+  const key = String(userId)
+  const pending = (writesSinceTrim.get(key) || 0) + 1
+  if (pending < TRIM_EVERY) {
+    writesSinceTrim.set(key, pending)
+    return
+  }
+  writesSinceTrim.set(key, 0)
   const count = await Activity.countDocuments({ userId })
   if (count <= MAX_ACTIVITIES_PER_USER) return
   const stale = await Activity.find({ userId }).sort({ createdAt: 1 }).limit(count - MAX_ACTIVITIES_PER_USER).select('_id')
