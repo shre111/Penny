@@ -62,11 +62,14 @@ async function recordActivity(userId, { entity, action, id, actor, doc }) {
       ? { type: entity === 'invoice' ? 'delete-invoice' : 'delete-client' }
       : undefined
   await Activity.create({ userId, entity, action, entityId: id || undefined, summary, actor, undo: undoable })
+  await trimActivities(Activity, userId)
+}
+
+async function trimActivities(Activity, userId) {
   const count = await Activity.countDocuments({ userId })
-  if (count > MAX_ACTIVITIES_PER_USER) {
-    const stale = await Activity.find({ userId }).sort({ createdAt: 1 }).limit(count - MAX_ACTIVITIES_PER_USER).select('_id')
-    await Activity.deleteMany({ _id: { $in: stale.map((a) => a._id) } })
-  }
+  if (count <= MAX_ACTIVITIES_PER_USER) return
+  const stale = await Activity.find({ userId }).sort({ createdAt: 1 }).limit(count - MAX_ACTIVITIES_PER_USER).select('_id')
+  await Activity.deleteMany({ _id: { $in: stale.map((a) => a._id) } })
 }
 
 function buildSummary(entity, action, doc) {
