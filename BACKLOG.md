@@ -24,7 +24,7 @@ One branch + PR per item; tick the box when it merges.
 - [x] 11. `ActivityFeed`: one in-flight Undo disables every other row's Undo button.
 - [x] 12. `QueuedDraftsCard`: one in-flight action disables every other draft's buttons.
 - [x] 13. `ProposalsCard`: one in-flight action disables every other proposal's buttons.
-- [ ] 14. `ImportCard` revokes the template blob URL before the download starts.
+- [x] 14. `ImportCard` revokes the template blob URL before the download starts.
 - [ ] 15. `ImportCard` uses `text-danger-500` for errors where the rest of the app uses `text-danger-600`.
 - [ ] 16. `api()` drops the JSON `Content-Type` when a caller passes its own `headers`.
 
