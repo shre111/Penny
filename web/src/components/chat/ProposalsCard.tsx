@@ -10,12 +10,12 @@ import { Spinner } from '../ui'
  * The owner has the final word — approve applies it to the books.
  */
 export function ProposalsCard({ proposals, onHandled }: { proposals: Proposal[]; onHandled: () => void }) {
-  const [busy, setBusy] = useState<string | null>(null)
+  const [busy, setBusy] = useState<{ id: string; action: 'approve' | 'decline' } | null>(null)
   const [done, setDone] = useState<Record<string, string>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const act = async (p: Proposal, action: 'approve' | 'decline') => {
-    setBusy(p._id)
+    setBusy({ id: p._id, action })
     setErrors((prev) => ({ ...prev, [p._id]: '' }))
     try {
       await api(`/api/proposals/${p._id}/${action}`, { method: 'POST' })
@@ -65,17 +65,25 @@ export function ProposalsCard({ proposals, onHandled }: { proposals: Proposal[];
                   <button
                     className="rounded-full px-3 py-1 text-xs font-semibold bg-brand-700 text-white hover:bg-brand-800 cursor-pointer disabled:opacity-50"
                     onClick={() => act(p, 'approve')}
-                    disabled={busy !== null}
+                    disabled={busy?.id === p._id}
                   >
-                    {busy === p._id ? <Spinner className="h-3 w-3" /> : <Check className="inline h-3 w-3 mr-1" />}
+                    {busy?.id === p._id && busy.action === 'approve' ? (
+                      <Spinner className="h-3 w-3" />
+                    ) : (
+                      <Check className="inline h-3 w-3 mr-1" />
+                    )}
                     Approve — update the invoice
                   </button>
                   <button
                     className="rounded-full px-3 py-1 text-xs font-semibold bg-card border border-line text-ink-soft hover:bg-stone-50 cursor-pointer"
                     onClick={() => act(p, 'decline')}
-                    disabled={busy !== null}
+                    disabled={busy?.id === p._id}
                   >
-                    <X className="inline h-3 w-3 mr-1" />
+                    {busy?.id === p._id && busy.action === 'decline' ? (
+                      <Spinner className="h-3 w-3" />
+                    ) : (
+                      <X className="inline h-3 w-3 mr-1" />
+                    )}
                     Decline
                   </button>
                 </div>
