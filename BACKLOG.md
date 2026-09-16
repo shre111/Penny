@@ -8,7 +8,7 @@ One branch + PR per item; tick the box when it merges.
 - [x] 1. `config.js` boots with the dev-default `JWT_SECRET` / `SERVICE_TOKEN` in production — `required()` takes a fallback, so it never actually fails. Anyone can forge a session cookie against a deploy that forgot to set them.
 - [x] 2. `POST /api/chat/sessions/:id/resume` has no rate limit, though it drives a full multi-agent run. `/messages` is limited; resume is the same cost.
 - [x] 3. `POST /api/demo/load` is unthrottled and destructive — it replaces the account's data on every call.
-- [ ] 4. `requireUserOrService` trusts `X-User-Id` verbatim; a malformed id reaches Mongo and surfaces as a CastError.
+- [x] 4. `requireUserOrService` trusts `X-User-Id` verbatim; a malformed id reaches Mongo and surfaces as a CastError.
 - [ ] 5. List routes pass raw query params into Mongo filters (`emails`, `activities`, `proposals`) — a bad `invoiceId` 500s and an object-valued `status` injects an operator.
 
 ## Correctness
