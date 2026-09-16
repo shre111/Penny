@@ -30,14 +30,17 @@ export function InvoiceTable({ invoices, highlights }: { invoices: Invoice[]; hi
     setShareError('')
     // Minting the link and copying it fail for different reasons and deserve
     // different answers — the drawer's share button already splits them.
-    let url = ''
-    try {
-      const r = await api<{ url: string }>(`/api/invoices/${inv._id}/share`, { method: 'POST' })
-      url = `${window.location.origin}${r.url}`
-    } catch (e: any) {
-      setShareError(e?.message || `Could not create the client link for ${inv.number}`)
-      return
+    const mintLink = async () => {
+      try {
+        const r = await api<{ url: string }>(`/api/invoices/${inv._id}/share`, { method: 'POST' })
+        return `${window.location.origin}${r.url}`
+      } catch (e: any) {
+        setShareError(e?.message || `Could not create the client link for ${inv.number}`)
+        return null
+      }
     }
+    const url = await mintLink()
+    if (url === null) return
     try {
       await navigator.clipboard.writeText(url)
       setCopiedId(inv._id)

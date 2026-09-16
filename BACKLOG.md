@@ -37,3 +37,4 @@ One branch + PR per item; tick the box when it merges.
 
 - [x] 19. Export invoices and clients to CSV — the mirror of the existing import.
 - [ ] 20. Add a Void filter to the invoice table; voided invoices are only reachable under "All".
+- [x] 21. `npm run lint` fails on main: the share-link fix in #95 left a `let url = ''` that trips `no-useless-assignment`.
