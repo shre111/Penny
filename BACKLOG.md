@@ -50,5 +50,5 @@ One branch + PR per item; tick the box when it merges.
 - [x] 28. `POST /api/memories` counts the whole collection on every save — the same waste #114 removed from the activity trail.
 - [x] 29. `ChartCard` renders an empty axis frame when the agent returns no rows, where the dashboard charts show a message.
 - [x] 30. `ActivityFeed`'s relative times never re-render — a feed left open says "just now" indefinitely.
-- [ ] 31. Unknown `/api/*` paths fall through to Express's HTML 404, which `api()` can't parse as JSON.
+- [x] 31. Unknown `/api/*` paths fall through to Express's HTML 404, which `api()` can't parse as JSON.
 
