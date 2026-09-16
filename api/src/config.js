@@ -7,13 +7,20 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 dotenv.config({ path: path.join(__dirname, '..', '.env'), quiet: true })
 dotenv.config({ path: path.join(__dirname, '..', '..', '.env'), quiet: true })
 
-const required = (name, fallback) => {
-  const v = process.env[name] ?? fallback
-  if (v === undefined) {
+const isProd = process.env.NODE_ENV === 'production'
+
+const required = (name, devFallback) => {
+  const v = process.env[name]
+  if (v) return v
+  if (isProd) {
+    console.error(`Missing required env var ${name} (no fallback in production)`)
+    process.exit(1)
+  }
+  if (devFallback === undefined) {
     console.error(`Missing required env var ${name}`)
     process.exit(1)
   }
-  return v
+  return devFallback
 }
 
 export const config = {
@@ -23,7 +30,7 @@ export const config = {
   aiUrl: process.env.AI_URL || 'http://localhost:8400', // AI service runs on 8400; 8000 is squatted by a local Chroma container
   serviceToken: required('SERVICE_TOKEN', 'dev-service-token'),
   googleClientId: process.env.GOOGLE_CLIENT_ID || '',
-  isProd: process.env.NODE_ENV === 'production',
+  isProd,
   // Extra browser origins allowed to make state-changing requests (CSRF guard).
   // Same-origin is always allowed; add cross-origin frontends here (e.g. a
   // Vercel domain proxying to this API). Comma-separated.
