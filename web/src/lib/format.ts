@@ -28,6 +28,10 @@ export function dueLabel(inv: { dueDate: string; effectiveStatus: string; daysOv
   if (inv.effectiveStatus === 'draft') return 'Draft'
   if (inv.effectiveStatus === 'void') return 'Void'
   const days = Math.ceil((new Date(inv.dueDate).getTime() - Date.now()) / 86400000)
+  if (days < 0) {
+    const ago = Math.abs(days)
+    return ago === 1 ? 'Was due yesterday' : `Was due ${ago} days ago`
+  }
   if (days === 0) return 'Due today'
   if (days === 1) return 'Due tomorrow'
   return `Due in ${days} days`
