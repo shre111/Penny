@@ -5,7 +5,7 @@ One branch + PR per item; tick the box when it merges.
 
 ## Security & hardening
 
-- [ ] 1. `config.js` boots with the dev-default `JWT_SECRET` / `SERVICE_TOKEN` in production — `required()` takes a fallback, so it never actually fails. Anyone can forge a session cookie against a deploy that forgot to set them.
+- [x] 1. `config.js` boots with the dev-default `JWT_SECRET` / `SERVICE_TOKEN` in production — `required()` takes a fallback, so it never actually fails. Anyone can forge a session cookie against a deploy that forgot to set them.
 - [ ] 2. `POST /api/chat/sessions/:id/resume` has no rate limit, though it drives a full multi-agent run. `/messages` is limited; resume is the same cost.
 - [ ] 3. `POST /api/demo/load` is unthrottled and destructive — it replaces the account's data on every call.
 - [ ] 4. `requireUserOrService` trusts `X-User-Id` verbatim; a malformed id reaches Mongo and surfaces as a CastError.
