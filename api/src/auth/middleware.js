@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken'
 import crypto from 'node:crypto'
+import mongoose from 'mongoose'
 import { config } from '../config.js'
 
 export const COOKIE_NAME = 'penny_token'
@@ -53,6 +54,7 @@ export function requireUserOrService(req, res, next) {
     }
     const userId = req.headers['x-user-id']
     if (!userId) return res.status(400).json({ error: 'X-User-Id required' })
+    if (!mongoose.isValidObjectId(userId)) return res.status(400).json({ error: 'X-User-Id is not a valid id' })
     req.userId = userId
     req.actor = req.headers['x-actor'] === 'agent' ? 'agent' : 'service'
     return next()
