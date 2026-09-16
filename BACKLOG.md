@@ -30,7 +30,7 @@ One branch + PR per item; tick the box when it merges.
 
 ## Performance
 
-- [ ] 17. `recordActivity` runs a `countDocuments` on every single mutation just to decide whether to trim.
+- [x] 17. `recordActivity` runs a `countDocuments` on every single mutation just to decide whether to trim.
 - [ ] 18. One socket event fans out into a refetch per `useLiveData` hook — the dashboard mounts seven, so a single invoice change fires seven requests.
 
 ## Features & enhancements
