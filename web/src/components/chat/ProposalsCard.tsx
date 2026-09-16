@@ -67,7 +67,11 @@ export function ProposalsCard({ proposals, onHandled }: { proposals: Proposal[];
                     onClick={() => act(p, 'approve')}
                     disabled={busy?.id === p._id}
                   >
-                    {busy?.id === p._id ? <Spinner className="h-3 w-3" /> : <Check className="inline h-3 w-3 mr-1" />}
+                    {busy?.id === p._id && busy.action === 'approve' ? (
+                      <Spinner className="h-3 w-3" />
+                    ) : (
+                      <Check className="inline h-3 w-3 mr-1" />
+                    )}
                     Approve — update the invoice
                   </button>
                   <button
@@ -75,7 +79,11 @@ export function ProposalsCard({ proposals, onHandled }: { proposals: Proposal[];
                     onClick={() => act(p, 'decline')}
                     disabled={busy?.id === p._id}
                   >
-                    <X className="inline h-3 w-3 mr-1" />
+                    {busy?.id === p._id && busy.action === 'decline' ? (
+                      <Spinner className="h-3 w-3" />
+                    ) : (
+                      <X className="inline h-3 w-3 mr-1" />
+                    )}
                     Decline
                   </button>
                 </div>
