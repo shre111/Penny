@@ -15,7 +15,7 @@ One branch + PR per item; tick the box when it merges.
 
 - [x] 6. `POST /api/memories` crashes with a 500 on a non-string `fact`, and measures the 300-char cap on untrimmed text.
 - [x] 7. `/api/metrics/charts` leaves aging and cash-flow sums unrounded while `/summary` and `/briefing` round — the same totals disagree at the cent.
-- [ ] 8. `GET /api/invoices?status=` accepts any string and silently returns an empty list for a typo.
+- [x] 8. `GET /api/invoices?status=` accepts any string and silently returns an empty list for a typo.
 - [ ] 9. `dueLabel()` renders "Due in -12 days" for a sent invoice whose balance cleared without a status flip.
 
 ## Frontend bugs
