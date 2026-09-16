@@ -88,7 +88,7 @@ export function QueuedDraftsCard({ drafts, onHandled }: { drafts: EmailRecord[];
                   <button
                     className="rounded-full px-3 py-1 text-xs font-semibold bg-brand-700 text-white hover:bg-brand-800 cursor-pointer disabled:opacity-50"
                     onClick={() => act(d, 'approve')}
-                    disabled={busy !== null}
+                    disabled={busy === d._id}
                   >
                     {busy === d._id ? <Spinner className="h-3 w-3" /> : <Check className="inline h-3 w-3 mr-1" />}
                     {editing === d._id ? 'Send edited' : 'Send'}
@@ -96,7 +96,7 @@ export function QueuedDraftsCard({ drafts, onHandled }: { drafts: EmailRecord[];
                   <button
                     className="rounded-full px-3 py-1 text-xs font-semibold bg-card border border-line text-ink-soft hover:bg-stone-50 cursor-pointer"
                     onClick={() => setEditing(editing === d._id ? null : d._id)}
-                    disabled={busy !== null}
+                    disabled={busy === d._id}
                   >
                     <Pencil className="inline h-3 w-3 mr-1" />
                     {editing === d._id ? 'Preview' : 'Edit first'}
@@ -104,7 +104,7 @@ export function QueuedDraftsCard({ drafts, onHandled }: { drafts: EmailRecord[];
                   <button
                     className="rounded-full px-3 py-1 text-xs font-semibold bg-card border border-line text-ink-soft hover:bg-stone-50 cursor-pointer"
                     onClick={() => act(d, 'dismiss')}
-                    disabled={busy !== null}
+                    disabled={busy === d._id}
                   >
                     <X className="inline h-3 w-3 mr-1" />
                     Skip
