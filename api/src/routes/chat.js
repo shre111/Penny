@@ -29,6 +29,13 @@ const newSessionLimiter = rateLimit({
   message: 'Too many new conversations — please wait a bit and try again.',
 })
 
+const resumeLimiter = rateLimit({
+  max: 40,
+  windowMs: 5 * 60 * 1000,
+  key: (r) => `chat-resume:${r.userId}`,
+  message: 'Too many approvals — please slow down a moment.',
+})
+
 chatRouter.get('/sessions', async (req, res) => {
   const sessions = await ChatSession.find({ userId: req.userId }).sort({ lastMessageAt: -1 }).limit(50).lean()
   res.json({ sessions })
@@ -110,7 +117,7 @@ chatRouter.post('/sessions/:id/messages', chatMessageLimiter, async (req, res) =
 })
 
 /** Resume a paused (human-in-the-loop) run with the user's decisions. */
-chatRouter.post('/sessions/:id/resume', async (req, res) => {
+chatRouter.post('/sessions/:id/resume', resumeLimiter, async (req, res) => {
   const { decisions, messageId } = req.body || {}
   if (!Array.isArray(decisions) || decisions.length === 0) {
     return res.status(400).json({ error: 'decisions are required' })
