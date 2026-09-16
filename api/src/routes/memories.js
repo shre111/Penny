@@ -23,16 +23,17 @@ memoriesRouter.get('/', async (req, res) => {
 
 memoriesRouter.post('/', async (req, res) => {
   const { fact } = req.body || {}
-  if (!fact?.trim()) return res.status(400).json({ error: 'fact is required' })
+  if (typeof fact !== 'string' || !fact.trim()) return res.status(400).json({ error: 'fact is required' })
   // Every sibling free-text field is capped (knowledge text 60k, proposal
   // reason 400 chars) — this one wasn't, and every saved fact gets echoed
   // into the system prompt of every future chat turn (build_system_prompt in
   // ai/app/agent.py), so one verbose save would bloat every later LLM call.
-  if (fact.length > 300) return res.status(400).json({ error: 'That fact is too long (max 300 characters) — try a shorter version' })
+  const trimmed = fact.trim()
+  if (trimmed.length > 300) return res.status(400).json({ error: 'That fact is too long (max 300 characters) — try a shorter version' })
   // Light dedupe: skip near-identical facts
-  const existing = await Memory.findOne({ userId: req.userId, fact: { $regex: `^${escapeRegex(fact.trim())}$`, $options: 'i' } })
+  const existing = await Memory.findOne({ userId: req.userId, fact: { $regex: `^${escapeRegex(trimmed)}$`, $options: 'i' } })
   if (existing) return res.json({ memory: existing, deduped: true })
-  const memory = await Memory.create({ userId: req.userId, fact: fact.trim() })
+  const memory = await Memory.create({ userId: req.userId, fact: trimmed })
   const count = await Memory.countDocuments({ userId: req.userId })
   if (count > MAX_MEMORIES_PER_USER) {
     const stale = await Memory.find({ userId: req.userId })
