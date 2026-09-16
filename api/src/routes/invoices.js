@@ -5,7 +5,7 @@ import { Invoice, nextInvoiceNumber } from '../models/Invoice.js'
 import { Client } from '../models/Client.js'
 import { requireUserOrService } from '../auth/middleware.js'
 import { emitChange } from '../realtime.js'
-import { escapeRegex } from '../util.js'
+import { escapeRegex, isObjectId } from '../util.js'
 
 export const invoicesRouter = Router()
 invoicesRouter.use(requireUserOrService)
@@ -18,8 +18,13 @@ function serialize(inv) {
 }
 
 // status filter accepts the derived 'overdue' and 'open' (= sent, any balance) pseudo-statuses
+const INVOICE_STATUS_FILTERS = ['all', 'overdue', 'open', 'draft', 'sent', 'paid', 'void']
+
 invoicesRouter.get('/', async (req, res) => {
   const { status, clientId } = req.query
+  if (status !== undefined && !INVOICE_STATUS_FILTERS.includes(status)) {
+    return res.status(400).json({ error: `status must be one of: ${INVOICE_STATUS_FILTERS.join(', ')}` })
+  }
   // Coerce the caller-supplied limit to a sane integer: a non-numeric value
   // (Number('abc') → NaN) would break the query, and an unbounded value would
   // let one request fetch and populate the entire collection. Clamp to 1–500.
