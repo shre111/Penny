@@ -140,7 +140,9 @@ metricsRouter.get('/charts', async (req, res) => {
     }
   }
 
-  res.json({ aging, cashflow: months.map(({ key, ...rest }) => rest) })
+  const roundedAging = aging.map((b) => ({ ...b, value: round2(b.value) }))
+
+  res.json({ aging: roundedAging, cashflow: months.map(({ key, ...rest }) => rest) })
 })
 
 /**
