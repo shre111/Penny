@@ -35,5 +35,5 @@ One branch + PR per item; tick the box when it merges.
 
 ## Features & enhancements
 
-- [ ] 19. Export invoices and clients to CSV — the mirror of the existing import.
+- [x] 19. Export invoices and clients to CSV — the mirror of the existing import.
 - [ ] 20. Add a Void filter to the invoice table; voided invoices are only reachable under "All".

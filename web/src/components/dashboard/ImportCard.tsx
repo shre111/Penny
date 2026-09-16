@@ -74,6 +74,7 @@ export function ImportCard() {
       <p className="text-xs text-ink-soft mb-3 max-w-xl">
         Already keep your books in a spreadsheet or another tool? Upload a CSV to bring your clients and
         invoices in at once. Unknown clients on an invoice are added automatically; duplicates are skipped.
+        You can download everything back out at any time — your books are yours.
       </p>
 
       <div className="grid sm:grid-cols-2 gap-3">
@@ -83,12 +84,20 @@ export function ImportCard() {
             <div key={kind} className="rounded-xl border border-line/60 p-3">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-semibold capitalize">{kind}</span>
-                <button
-                  className="inline-flex items-center gap-1 text-[11px] text-ink-soft hover:text-brand-700 cursor-pointer"
-                  onClick={() => downloadTemplate(kind)}
-                >
-                  <Download className="h-3 w-3" /> template
-                </button>
+                <div className="flex items-center gap-2.5">
+                  <button
+                    className="inline-flex items-center gap-1 text-[11px] text-ink-soft hover:text-brand-700 cursor-pointer"
+                    onClick={() => downloadTemplate(kind)}
+                  >
+                    <Download className="h-3 w-3" /> template
+                  </button>
+                  <a
+                    className="inline-flex items-center gap-1 text-[11px] text-ink-soft hover:text-brand-700 cursor-pointer"
+                    href={`/api/export/${kind}.csv`}
+                  >
+                    <Download className="h-3 w-3" /> export
+                  </a>
+                </div>
               </div>
               <p className="text-[11px] text-ink-soft mb-2 font-mono break-words">{TEMPLATES[kind].headers}</p>
               <button

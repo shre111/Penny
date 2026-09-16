@@ -15,6 +15,7 @@ import { memoriesRouter } from './routes/memories.js'
 import { chatRouter } from './routes/chat.js'
 import { uploadsRouter } from './routes/uploads.js'
 import { importsRouter } from './routes/imports.js'
+import { exportsRouter } from './routes/exports.js'
 import { demoRouter } from './routes/demo.js'
 import { activitiesRouter } from './routes/activities.js'
 import { proposalsRouter } from './routes/proposals.js'
@@ -49,6 +50,7 @@ app.use('/api/memories', memoriesRouter)
 app.use('/api/chat', chatRouter)
 app.use('/api/uploads', uploadsRouter)
 app.use('/api/import', importsRouter)
+app.use('/api/export', exportsRouter)
 app.use('/api/demo', demoRouter)
 app.use('/api/activities', activitiesRouter)
 app.use('/api/proposals', proposalsRouter)
