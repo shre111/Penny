@@ -25,6 +25,9 @@ invoicesRouter.get('/', async (req, res) => {
   if (status !== undefined && !INVOICE_STATUS_FILTERS.includes(status)) {
     return res.status(400).json({ error: `status must be one of: ${INVOICE_STATUS_FILTERS.join(', ')}` })
   }
+  if (clientId !== undefined && !isObjectId(clientId)) {
+    return res.status(400).json({ error: 'clientId is not a valid id' })
+  }
   // Coerce the caller-supplied limit to a sane integer: a non-numeric value
   // (Number('abc') → NaN) would break the query, and an unbounded value would
   // let one request fetch and populate the entire collection. Clamp to 1–500.
