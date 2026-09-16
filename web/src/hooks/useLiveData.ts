@@ -8,6 +8,8 @@ import { getSocket, type EntityChange } from '../lib/socket'
  * agent, the changed id is "highlighted" for a few seconds so the UI can glow
  * — that's the "Penny did this" moment.
  */
+const REFETCH_DEBOUNCE_MS = 120
+
 export function useLiveData<T>(path: string, entities: string[]) {
   const [data, setData] = useState<T | null>(null)
   const [highlights, setHighlights] = useState<Set<string>>(new Set())
@@ -31,9 +33,11 @@ export function useLiveData<T>(path: string, entities: string[]) {
     // one timer per highlighted id: a fresh change on the same id must RESET its
     // 3s window, not let an earlier timer cut the glow short.
     const timers = new Map<string, ReturnType<typeof setTimeout>>()
+    let refetchTimer: ReturnType<typeof setTimeout> | null = null
     const onChange = (change: EntityChange) => {
       if (!entitiesRef.current.includes(change.entity)) return
-      refetch()
+      if (refetchTimer) clearTimeout(refetchTimer)
+      refetchTimer = setTimeout(refetch, REFETCH_DEBOUNCE_MS)
       if (change.actor === 'agent' && change.id) {
         const id = String(change.id)
         setHighlights((prev) => new Set(prev).add(id))
@@ -55,6 +59,7 @@ export function useLiveData<T>(path: string, entities: string[]) {
     socket.on('entity:changed', onChange)
     return () => {
       socket.off('entity:changed', onChange)
+      if (refetchTimer) clearTimeout(refetchTimer)
       timers.forEach(clearTimeout) // don't fire setState after unmount
     }
   }, [refetch])
