@@ -4,13 +4,18 @@ import { Invoice } from '../models/Invoice.js'
 import { Client } from '../models/Client.js'
 import { requireAuth } from '../auth/middleware.js'
 import { emitChange } from '../realtime.js'
+import { isObjectId } from '../util.js'
 
 export const activitiesRouter = Router()
 activitiesRouter.use(requireAuth)
 
 activitiesRouter.get('/', async (req, res) => {
+  const { entityId } = req.query
+  if (entityId !== undefined && !isObjectId(entityId)) {
+    return res.status(400).json({ error: 'entityId is not a valid id' })
+  }
   const filter = { userId: req.userId }
-  if (req.query.entityId) filter.entityId = req.query.entityId
+  if (entityId) filter.entityId = entityId
   const activities = await Activity.find(filter).sort({ createdAt: -1 }).limit(60).lean()
   res.json({ activities })
 })
