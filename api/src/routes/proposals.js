@@ -3,14 +3,24 @@ import { Proposal } from '../models/Proposal.js'
 import { Invoice } from '../models/Invoice.js'
 import { requireAuth, requireUserOrService } from '../auth/middleware.js'
 import { emitChange } from '../realtime.js'
+import { isObjectId } from '../util.js'
 
 export const proposalsRouter = Router()
 proposalsRouter.use(requireUserOrService)
 
+const PROPOSAL_STATUSES = ['pending', 'approved', 'declined']
+
 proposalsRouter.get('/', async (req, res) => {
+  const { status, invoiceId } = req.query
+  if (status !== undefined && !PROPOSAL_STATUSES.includes(status)) {
+    return res.status(400).json({ error: `status must be one of: ${PROPOSAL_STATUSES.join(', ')}` })
+  }
+  if (invoiceId !== undefined && !isObjectId(invoiceId)) {
+    return res.status(400).json({ error: 'invoiceId is not a valid id' })
+  }
   const filter = { userId: req.userId }
-  if (req.query.status) filter.status = req.query.status
-  if (req.query.invoiceId) filter.invoiceId = req.query.invoiceId
+  if (status) filter.status = status
+  if (invoiceId) filter.invoiceId = invoiceId
   const proposals = await Proposal.find(filter)
     .sort({ createdAt: -1 })
     .limit(30)
