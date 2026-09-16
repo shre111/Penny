@@ -26,7 +26,7 @@ One branch + PR per item; tick the box when it merges.
 - [x] 13. `ProposalsCard`: one in-flight action disables every other proposal's buttons.
 - [x] 14. `ImportCard` revokes the template blob URL before the download starts.
 - [x] 15. `ImportCard` uses `text-danger-500` for errors where the rest of the app uses `text-danger-600`.
-- [ ] 16. `api()` drops the JSON `Content-Type` when a caller passes its own `headers`.
+- [x] 16. `api()` drops the JSON `Content-Type` when a caller passes its own `headers`.
 
 ## Performance
 

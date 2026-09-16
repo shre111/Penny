@@ -10,12 +10,16 @@ export async function api<T = unknown>(
   path: string,
   options: RequestInit & { json?: unknown } = {}
 ): Promise<T> {
-  const { json, ...rest } = options
+  const { json, headers, ...rest } = options
+  const finalHeaders = new Headers(headers)
+  if (json !== undefined && !finalHeaders.has('Content-Type')) {
+    finalHeaders.set('Content-Type', 'application/json')
+  }
   const res = await fetch(path, {
     credentials: 'include',
-    headers: json !== undefined ? { 'Content-Type': 'application/json' } : undefined,
-    body: json !== undefined ? JSON.stringify(json) : undefined,
     ...rest,
+    headers: finalHeaders,
+    body: json !== undefined ? JSON.stringify(json) : rest.body,
   })
   let data: any = null
   try {
