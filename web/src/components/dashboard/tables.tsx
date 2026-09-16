@@ -21,7 +21,7 @@ const SOURCE_BADGE: Record<string, { label: string; icon: React.ReactNode }> = {
 }
 
 export function InvoiceTable({ invoices, highlights }: { invoices: Invoice[]; highlights: Set<string> }) {
-  const [filter, setFilter] = useState<'all' | 'overdue' | 'open' | 'paid' | 'draft'>('all')
+  const [filter, setFilter] = useState<'all' | 'overdue' | 'open' | 'paid' | 'draft' | 'void'>('all')
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [shareError, setShareError] = useState('')
   const [drawerInvoice, setDrawerInvoice] = useState<Invoice | null>(null)
@@ -74,6 +74,7 @@ export function InvoiceTable({ invoices, highlights }: { invoices: Invoice[]; hi
     { key: 'open', label: 'Awaiting' },
     { key: 'paid', label: 'Paid' },
     { key: 'draft', label: 'Drafts' },
+    { key: 'void', label: 'Void' },
   ]
   return (
     <div className="card overflow-hidden">
