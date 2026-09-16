@@ -85,7 +85,7 @@ export function ActivityFeed({ activities, refetch }: { activities: ActivityItem
                 <button
                   className="btn-ghost text-xs py-1 px-2.5 shrink-0"
                   onClick={() => undo(a)}
-                  disabled={busy !== null}
+                  disabled={busy === a._id}
                 >
                   {busy === a._id ? <Spinner className="h-3 w-3" /> : <RotateCcw className="h-3 w-3" />}
                   Undo
