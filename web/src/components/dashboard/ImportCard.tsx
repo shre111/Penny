@@ -115,7 +115,7 @@ export function ImportCard() {
         })}
       </div>
 
-      {error && <p className="mt-3 text-xs font-medium text-danger-500">{error}</p>}
+      {error && <p className="mt-3 text-xs font-medium text-danger-600">{error}</p>}
 
       {result && (
         <div className="mt-3 text-xs">
