@@ -51,6 +51,8 @@ export function emitChange(userId, { entity, action, id, actor = 'user', doc = n
 // mutation writes an Activity row forever with no trim, while GET only ever
 // shows the newest 60. Cap it the same way.
 const MAX_ACTIVITIES_PER_USER = 500
+const TRIM_EVERY = 50
+const writesSinceTrim = new Map()
 
 async function recordActivity(userId, { entity, action, id, actor, doc }) {
   if (action === 'reloaded') return // bulk demo reloads aren't individual actions
@@ -62,11 +64,21 @@ async function recordActivity(userId, { entity, action, id, actor, doc }) {
       ? { type: entity === 'invoice' ? 'delete-invoice' : 'delete-client' }
       : undefined
   await Activity.create({ userId, entity, action, entityId: id || undefined, summary, actor, undo: undoable })
-  const count = await Activity.countDocuments({ userId })
-  if (count > MAX_ACTIVITIES_PER_USER) {
-    const stale = await Activity.find({ userId }).sort({ createdAt: 1 }).limit(count - MAX_ACTIVITIES_PER_USER).select('_id')
-    await Activity.deleteMany({ _id: { $in: stale.map((a) => a._id) } })
+  await trimActivities(Activity, userId)
+}
+
+async function trimActivities(Activity, userId) {
+  const key = String(userId)
+  const pending = (writesSinceTrim.get(key) || 0) + 1
+  if (pending < TRIM_EVERY) {
+    writesSinceTrim.set(key, pending)
+    return
   }
+  writesSinceTrim.set(key, 0)
+  const count = await Activity.countDocuments({ userId })
+  if (count <= MAX_ACTIVITIES_PER_USER) return
+  const stale = await Activity.find({ userId }).sort({ createdAt: 1 }).limit(count - MAX_ACTIVITIES_PER_USER).select('_id')
+  await Activity.deleteMany({ _id: { $in: stale.map((a) => a._id) } })
 }
 
 function buildSummary(entity, action, doc) {
