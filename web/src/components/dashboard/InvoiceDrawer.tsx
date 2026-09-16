@@ -13,13 +13,13 @@ export function InvoiceDrawer({ invoice, onClose }: { invoice: Invoice; onClose:
   const [activities, setActivities] = useState<any[] | null>(null)
   const [shareOpen, setShareOpen] = useState(false)
   const [sharePin, setSharePin] = useState('')
-  const [shareMsg, setShareMsg] = useState('')
+  const [shareMsg, setShareMsg] = useState<{ text: string; tone: 'ok' | 'error' } | null>(null)
   const [sharing, setSharing] = useState(false)
   const [pinProtected, setPinProtected] = useState(Boolean(invoice.sharePinProtected))
 
   const share = async (pin?: string) => {
     setSharing(true)
-    setShareMsg('')
+    setShareMsg(null)
     try {
       const r = await api<{ url: string; pinProtected: boolean }>(`/api/invoices/${invoice._id}/share`, {
         method: 'POST',
@@ -27,17 +27,18 @@ export function InvoiceDrawer({ invoice, onClose }: { invoice: Invoice; onClose:
       })
       setPinProtected(r.pinProtected)
       if (pin === '') {
-        setShareMsg('PIN removed.')
+        setShareMsg({ text: 'PIN removed.', tone: 'ok' })
         return
       }
       await navigator.clipboard.writeText(`${window.location.origin}${r.url}`).catch(() => {})
-      setShareMsg(
-        r.pinProtected
+      setShareMsg({
+        text: r.pinProtected
           ? 'Link copied — PIN-protected. Share the PIN with your client separately.'
-          : 'Link copied to clipboard.'
-      )
+          : 'Link copied to clipboard.',
+        tone: 'ok',
+      })
     } catch (e: any) {
-      setShareMsg(e?.message || 'Could not create the link')
+      setShareMsg({ text: e?.message || 'Could not create the link', tone: 'error' })
     } finally {
       setSharing(false)
     }
@@ -163,7 +164,11 @@ export function InvoiceDrawer({ invoice, onClose }: { invoice: Invoice; onClose:
                   Remove PIN protection
                 </button>
               )}
-              {shareMsg && <p className="text-xs font-medium text-brand-700">{shareMsg}</p>}
+              {shareMsg && (
+                <p className={`text-xs font-medium ${shareMsg.tone === 'error' ? 'text-danger-600' : 'text-brand-700'}`}>
+                  {shareMsg.text}
+                </p>
+              )}
             </div>
           )}
 
