@@ -23,7 +23,7 @@ memoriesRouter.get('/', async (req, res) => {
 
 memoriesRouter.post('/', async (req, res) => {
   const { fact } = req.body || {}
-  if (!fact?.trim()) return res.status(400).json({ error: 'fact is required' })
+  if (typeof fact !== 'string' || !fact.trim()) return res.status(400).json({ error: 'fact is required' })
   // Every sibling free-text field is capped (knowledge text 60k, proposal
   // reason 400 chars) — this one wasn't, and every saved fact gets echoed
   // into the system prompt of every future chat turn (build_system_prompt in
