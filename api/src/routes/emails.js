@@ -5,6 +5,7 @@ import { User } from '../models/User.js'
 import { requireAuth, requireUserOrService } from '../auth/middleware.js'
 import { emitChange } from '../realtime.js'
 import { config } from '../config.js'
+import { isObjectId } from '../util.js'
 
 
 export const AUTO_SEND_DELAY_MS = 15 * 60 * 1000 // the cancel window
@@ -12,10 +13,19 @@ export const AUTO_SEND_DELAY_MS = 15 * 60 * 1000 // the cancel window
 export const emailsRouter = Router()
 emailsRouter.use(requireUserOrService)
 
+const EMAIL_STATUSES = ['queued', 'scheduled', 'sent', 'simulated', 'failed', 'dismissed']
+
 emailsRouter.get('/', async (req, res) => {
+  const { status, invoiceId } = req.query
+  if (status !== undefined && !EMAIL_STATUSES.includes(status)) {
+    return res.status(400).json({ error: `status must be one of: ${EMAIL_STATUSES.join(', ')}` })
+  }
+  if (invoiceId !== undefined && !isObjectId(invoiceId)) {
+    return res.status(400).json({ error: 'invoiceId is not a valid id' })
+  }
   const filter = { userId: req.userId }
-  if (req.query.status) filter.status = req.query.status
-  if (req.query.invoiceId) filter.invoiceId = req.query.invoiceId
+  if (status) filter.status = status
+  if (invoiceId) filter.invoiceId = invoiceId
   const emails = await Email.find(filter).sort({ createdAt: -1 }).limit(50).lean()
   res.json({ emails })
 })
