@@ -20,7 +20,7 @@ One branch + PR per item; tick the box when it merges.
 
 ## Frontend bugs
 
-- [ ] 10. `InvoiceDrawer`'s share errors render in the success colour — the same bug fixed in #96 for `KnowledgeCard`.
+- [x] 10. `InvoiceDrawer`'s share errors render in the success colour — the same bug fixed in #96 for `KnowledgeCard`.
 - [ ] 11. `ActivityFeed`: one in-flight Undo disables every other row's Undo button.
 - [ ] 12. `QueuedDraftsCard`: one in-flight action disables every other draft's buttons.
 - [ ] 13. `ProposalsCard`: one in-flight action disables every other proposal's buttons.
