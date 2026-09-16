@@ -29,8 +29,10 @@ function downloadTemplate(kind: Kind) {
   const a = document.createElement('a')
   a.href = url
   a.download = `penny-${kind}-template.csv`
+  document.body.appendChild(a)
   a.click()
-  URL.revokeObjectURL(url)
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
 /**
