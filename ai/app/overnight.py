@@ -86,10 +86,12 @@ def run_overnight(user_id: str, user_name: str = "", business_name: str = "") ->
     facts = [m["fact"] for m in owner]
     if facts:
         tone_notes = "Owner preferences from memory: " + " ".join(facts[-5:]) + "\n"
-    # sign-off: a remembered name wins, then the account name, then the business
-    owner_name = next(
-        (f.split("name is ")[-1].rstrip(".") for f in facts if "name is" in f),
-        (user_name or "").split(" ")[0] or business_name or "the team",
+    # sign-off: a remembered owner name wins, then the account name, then the business
+    owner_name = (
+        _remembered_owner_name(facts)
+        or (user_name or "").split(" ")[0]
+        or business_name
+        or "the team"
     )
 
     cutoff = datetime.now(timezone.utc) - timedelta(days=REMINDER_COOLDOWN_DAYS)
