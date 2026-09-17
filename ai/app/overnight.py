@@ -78,7 +78,7 @@ def run_overnight(user_id: str, user_name: str = "", business_name: str = "") ->
     )
 
     cutoff = datetime.now(timezone.utc) - timedelta(days=REMINDER_COOLDOWN_DAYS)
-    queued, skipped = 0, 0
+    queued, skipped, failed = 0, 0, 0
     for inv in invoices:
         if queued >= MAX_DRAFTS_PER_NIGHT:
             break
@@ -109,20 +109,25 @@ def run_overnight(user_id: str, user_name: str = "", business_name: str = "") ->
             print(f"[overnight] model draft failed ({type(e).__name__}: {str(e)[:160]}) — using template")
             draft = _template_draft(compact, owner_name)
 
-        request(
-            user_id,
-            "POST",
-            "/api/emails",
-            json={
-                "to": email_addr,
-                "subject": draft["subject"],
-                "body": draft["body"],
-                "status": "queued",
-                "provider": "overnight",
-                "invoiceId": inv["_id"],
-                "clientId": client.get("_id"),
-            },
-        )
+        try:
+            request(
+                user_id,
+                "POST",
+                "/api/emails",
+                json={
+                    "to": email_addr,
+                    "subject": draft["subject"],
+                    "body": draft["body"],
+                    "status": "queued",
+                    "provider": "overnight",
+                    "invoiceId": inv["_id"],
+                    "clientId": client.get("_id"),
+                },
+            )
+        except Exception as e:  # noqa: BLE001
+            print(f"[overnight] queueing {inv['number']} failed ({type(e).__name__}: {str(e)[:160]})")
+            failed += 1
+            continue
         queued += 1
 
-    return {"queued": queued, "skipped": skipped}
+    return {"queued": queued, "skipped": skipped, "failed": failed}
