@@ -6,6 +6,7 @@ owner's saved tone preferences); on any model failure — including scripted
 dev mode — it falls back to a respectable template so the nightly job never
 breaks the morning experience.
 """
+import re
 from datetime import datetime, timedelta, timezone
 
 from pydantic import BaseModel, Field
@@ -15,6 +16,20 @@ from .node_client import request
 
 REMINDER_COOLDOWN_DAYS = 3
 MAX_DRAFTS_PER_NIGHT = 5
+
+_OWNER_NAME_RE = re.compile(
+    r"(?:my|(?:the\s+)?owner(?:'s|’s)?|(?:the\s+)?user(?:'s|’s)?)"
+    r"\s+(?:first\s+)?name\s+is\s+([A-Za-z][\w'’-]*)",
+    re.IGNORECASE,
+)
+
+
+def _remembered_owner_name(facts: list[str]) -> str:
+    for fact in facts:
+        match = _OWNER_NAME_RE.search(fact)
+        if match:
+            return match.group(1)
+    return ""
 
 
 class EmailDraft(BaseModel):
