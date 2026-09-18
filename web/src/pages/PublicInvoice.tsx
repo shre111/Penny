@@ -55,6 +55,8 @@ export default function PublicInvoice() {
   const [pinRequired, setPinRequired] = useState(false)
   const [pinInput, setPinInput] = useState('')
   const [pinError, setPinError] = useState('')
+  const [pdfBusy, setPdfBusy] = useState(false)
+  const [pdfError, setPdfError] = useState('')
   const pinRef = useRef<string>(sessionStorage.getItem(`penny:pin:${token}`) || '')
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -91,6 +93,29 @@ export default function PublicInvoice() {
     sessionStorage.setItem(`penny:pin:${token}`, v)
     setPinError('')
     refreshInvoice()
+  }
+
+  const downloadPdf = async () => {
+    setPdfBusy(true)
+    setPdfError('')
+    try {
+      const res = await fetch(`/api/public/invoice/${token}/pdf`, {
+        headers: pinRef.current ? { 'x-invoice-pin': pinRef.current } : undefined,
+      })
+      if (!res.ok) throw new Error('Could not download the PDF just now')
+      const url = URL.createObjectURL(await res.blob())
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${invoice?.number || 'invoice'}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+    } catch (e: any) {
+      setPdfError(e?.message || 'Could not download the PDF just now')
+    } finally {
+      setPdfBusy(false)
+    }
   }
 
   useEffect(() => {
@@ -213,9 +238,12 @@ export default function PublicInvoice() {
     <div className="min-h-screen bg-paper">
       <header className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
         <p className="font-display font-semibold text-xl">{invoice.businessName}</p>
-        <a className="btn-ghost text-xs py-1.5 px-3" href={`/api/public/invoice/${token}/pdf${pinRef.current ? `?pin=${encodeURIComponent(pinRef.current)}` : ''}`} target="_blank" rel="noreferrer">
-          <FileDown className="h-3.5 w-3.5" /> Download PDF
-        </a>
+        <div className="flex items-center gap-2">
+          {pdfError && <span className="text-xs text-danger-600">{pdfError}</span>}
+          <button className="btn-ghost text-xs py-1.5 px-3" onClick={downloadPdf} disabled={pdfBusy}>
+            {pdfBusy ? <Spinner className="h-3.5 w-3.5" /> : <FileDown className="h-3.5 w-3.5" />} Download PDF
+          </button>
+        </div>
       </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 pb-10 grid lg:grid-cols-[1fr_420px] gap-5">
