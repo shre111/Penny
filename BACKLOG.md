@@ -56,7 +56,7 @@ One branch + PR per item; tick the box when it merges.
 
 - [x] 32. One failed email POST aborts the entire overnight run — the same "don't lose the batch over one bad row" problem fixed for CSV import in #86 and #89.
 - [x] 33. The overnight sign-off scans memories for `"name is"` and takes the last match, so a fact about a *client's* contact signs the owner's reminders.
-- [ ] 34. A network blip on the public invoice page renders "This invoice link isn't valid", telling the client their link is dead when it isn't.
+- [x] 34. A network blip on the public invoice page renders "This invoice link isn't valid", telling the client their link is dead when it isn't.
 - [ ] 35. The public PDF link puts the share PIN in the query string, where it lands in history, access logs and the Referer header.
 - [ ] 36. A failed logout leaves the user apparently signed in — the socket stays open and local state is never cleared.
 - [ ] 37. Unguarded `localStorage` access in the theme and shell providers throws on load where site data is blocked.
