@@ -47,6 +47,7 @@ export default function PublicInvoice() {
   const { token } = useParams()
   const [invoice, setInvoice] = useState<PublicInvoiceData | null>(null)
   const [notFound, setNotFound] = useState(false)
+  const [loadError, setLoadError] = useState('')
   const [messages, setMessages] = useState<ConciergeMessage[]>([])
   const [streaming, setStreaming] = useState<ConciergeMessage | null>(null)
   const [input, setInput] = useState('')
@@ -58,6 +59,7 @@ export default function PublicInvoice() {
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const refreshInvoice = () => {
+    setLoadError('')
     fetch(`/api/public/invoice/${token}`, {
       headers: pinRef.current ? { 'x-invoice-pin': pinRef.current } : undefined,
     })
@@ -70,13 +72,14 @@ export default function PublicInvoice() {
           if (pinRef.current || res.status === 429) setPinError(d.error || 'That PIN is not correct')
           return
         }
+        if (res.status >= 500) return setLoadError('We could not load this invoice just now. Please try again in a moment.')
         if (!res.ok) return setNotFound(true)
         const d = await res.json()
         setInvoice(d.invoice)
         setPinRequired(false)
         setPinError('')
       })
-      .catch(() => setNotFound(true))
+      .catch(() => setLoadError('We could not reach the server. Please check your connection and try again.'))
   }
   useEffect(refreshInvoice, [token])
 
@@ -185,6 +188,16 @@ export default function PublicInvoice() {
             </button>
           </form>
         </div>
+      </div>
+    )
+  }
+  if (loadError && !invoice) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 text-center px-6">
+        <CoinMark size={44} />
+        <h1 className="font-display text-2xl">Something went wrong</h1>
+        <p className="text-ink-soft text-sm max-w-sm">{loadError}</p>
+        <button className="btn-primary mt-1" onClick={refreshInvoice}>Try again</button>
       </div>
     )
   }
