@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { localStore } from './storage'
 
 export type Theme = 'paper' | 'light' | 'dark'
 const STORAGE_KEY = 'penny:theme'
@@ -10,13 +11,13 @@ const Ctx = createContext<{ theme: Theme; setTheme: (t: Theme) => void }>({
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY)
+    const saved = localStore.get(STORAGE_KEY)
     return saved === 'light' || saved === 'dark' || saved === 'paper' ? saved : 'paper'
   })
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
-    localStorage.setItem(STORAGE_KEY, theme)
+    localStore.set(STORAGE_KEY, theme)
   }, [theme])
 
   return <Ctx.Provider value={{ theme, setTheme }}>{children}</Ctx.Provider>
