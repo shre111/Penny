@@ -34,9 +34,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const logout = async () => {
-    await api('/api/auth/logout', { method: 'POST' })
-    disconnectSocket()
-    setUser(null)
+    try {
+      await api('/api/auth/logout', { method: 'POST' })
+    } catch (err) {
+      console.error('[auth] logout request failed', err)
+    } finally {
+      disconnectSocket()
+      setUser(null)
+    }
   }
 
   return <Ctx.Provider value={{ user, loading, setUser, logout }}>{children}</Ctx.Provider>
