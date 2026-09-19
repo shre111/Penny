@@ -3,6 +3,7 @@ import { LayoutDashboard, LogOut, MessageCircle } from 'lucide-react'
 import { useAuth } from '../lib/auth'
 import { onAskPenny } from '../lib/askPenny'
 import { Wordmark } from '../components/ui'
+import { localStore } from '../lib/storage'
 import { ThemeSwitch } from '../components/ThemeSwitch'
 import { Dashboard } from '../components/dashboard/Dashboard'
 import { ChatPanel } from '../components/chat/ChatPanel'
@@ -21,7 +22,7 @@ export default function AppShell() {
   const { user, logout } = useAuth()
   const [mobileView, setMobileView] = useState<'dashboard' | 'chat'>('chat')
   const [chatWidth, setChatWidth] = useState(() => {
-    const saved = Number(localStorage.getItem(CHAT_WIDTH_KEY))
+    const saved = Number(localStore.get(CHAT_WIDTH_KEY))
     // clamp a restored width to the current viewport's max — a value saved on a
     // wider window would otherwise overflow the panel on a narrower one.
     return saved >= CHAT_WIDTH_MIN ? Math.min(saved, chatWidthMax()) : CHAT_WIDTH_DEFAULT
@@ -60,7 +61,7 @@ export default function AppShell() {
       document.body.style.userSelect = ''
       document.body.style.cursor = ''
       setDragging(false)
-      localStorage.setItem(CHAT_WIDTH_KEY, String(widthRef.current))
+      localStore.set(CHAT_WIDTH_KEY, String(widthRef.current))
     }
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp, { once: true })
@@ -68,7 +69,7 @@ export default function AppShell() {
 
   const resetWidth = () => {
     setChatWidth(CHAT_WIDTH_DEFAULT)
-    localStorage.setItem(CHAT_WIDTH_KEY, String(CHAT_WIDTH_DEFAULT))
+    localStore.set(CHAT_WIDTH_KEY, String(CHAT_WIDTH_DEFAULT))
   }
 
   return (
