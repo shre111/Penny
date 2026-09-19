@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm'
 import { dueLabel, fmtDate, fmtMoney, STATUS_LABELS, STATUS_STYLES } from '../lib/format'
 import { CoinMark, Spinner, Wordmark } from '../components/ui'
 import type { ActivityEvent } from '../lib/types'
+import { sessionStore } from '../lib/storage'
 
 interface PublicInvoiceData {
   number: string
@@ -34,10 +35,10 @@ interface ConciergeMessage {
 const CHIPS = ['What is this invoice for?', 'Send me the PDF', "I'll pay it by next Friday", 'Could I split this in two?']
 
 function visitorId(): string {
-  let id = sessionStorage.getItem('penny:visitor')
+  let id = sessionStore.get('penny:visitor')
   if (!id) {
     id = Math.random().toString(36).slice(2, 12)
-    sessionStorage.setItem('penny:visitor', id)
+    sessionStore.set('penny:visitor', id)
   }
   return id
 }
@@ -57,7 +58,7 @@ export default function PublicInvoice() {
   const [pinError, setPinError] = useState('')
   const [pdfBusy, setPdfBusy] = useState(false)
   const [pdfError, setPdfError] = useState('')
-  const pinRef = useRef<string>(sessionStorage.getItem(`penny:pin:${token}`) || '')
+  const pinRef = useRef<string>(sessionStore.get(`penny:pin:${token}`) || '')
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const refreshInvoice = () => {
@@ -90,7 +91,7 @@ export default function PublicInvoice() {
     const v = pinInput.trim()
     if (!v) return
     pinRef.current = v
-    sessionStorage.setItem(`penny:pin:${token}`, v)
+    sessionStore.set(`penny:pin:${token}`, v)
     setPinError('')
     refreshInvoice()
   }
