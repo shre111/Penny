@@ -60,6 +60,6 @@ One branch + PR per item; tick the box when it merges.
 - [x] 35. The public PDF link puts the share PIN in the query string, where it lands in history, access logs and the Referer header.
 - [x] 36. A failed logout leaves the user apparently signed in — the socket stays open and local state is never cleared.
 - [x] 37. Unguarded `localStorage` access in the theme and shell providers throws on load where site data is blocked.
-- [ ] 38. The agent's `MongoClient` has no server-selection timeout, so an unreachable Mongo hangs the first chat turn for 30s (the Python side of #124).
+- [x] 38. The agent's `MongoClient` has no server-selection timeout, so an unreachable Mongo hangs the first chat turn for 30s (the Python side of #124).
 - [ ] 39. Invoice table rows open the drawer on click only — no keyboard access, no role, no focus ring.
 
