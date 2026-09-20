@@ -31,7 +31,7 @@ from .tools import build_tools
 
 MULTI_AGENT = os.getenv("PENNY_MULTI_AGENT", "true").lower() != "false"
 
-_mongo = MongoClient(config.MONGODB_URI)
+_mongo = MongoClient(config.MONGODB_URI, serverSelectionTimeoutMS=5000)
 checkpointer = MongoDBSaver(_mongo, db_name="penny_agent")
 
 
