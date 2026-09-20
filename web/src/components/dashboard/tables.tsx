@@ -116,10 +116,19 @@ export function InvoiceTable({ invoices, highlights }: { invoices: Invoice[]; hi
               {filtered.map((inv) => (
                 <tr
                   key={inv._id}
-                  className={`group border-b border-line/60 last:border-0 hover:bg-paper/50 transition-colors cursor-pointer ${
+                  className={`group border-b border-line/60 last:border-0 hover:bg-paper/50 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-brand-600 focus-visible:outline-offset-[-2px] ${
                     highlights.has(inv._id) ? 'animate-glow' : ''
                   }`}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Open invoice ${inv.number} for ${inv.clientId?.name || 'this client'}`}
                   onClick={() => setDrawerInvoice(inv)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      setDrawerInvoice(inv)
+                    }
+                  }}
                 >
                   <td className="px-4 py-3 font-semibold whitespace-nowrap">
                     {inv.number}
