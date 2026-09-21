@@ -63,3 +63,19 @@ One branch + PR per item; tick the box when it merges.
 - [x] 38. The agent's `MongoClient` has no server-selection timeout, so an unreachable Mongo hangs the first chat turn for 30s (the Python side of #124).
 - [x] 39. Invoice table rows open the drawer on click only — no keyboard access, no role, no focus ring.
 
+## Fourth pass — 2026-09-21
+
+Severity is lower this round: the earlier passes took the serious defects. These
+are round-trip fidelity, robustness and accessibility.
+
+- [ ] 40. The CSV export added in #116 omits `currency`, and the importer hardcodes USD — a non-USD invoice loses its currency on a round trip.
+- [ ] 41. `_find_invoice` interpolates the invoice number into the URL path unencoded, so a number containing `/`, `?` or `#` hits the wrong route.
+- [ ] 42. A failed socket handshake (expired cookie) retries silently forever — the dashboard stops updating live with nothing said.
+- [ ] 43. `ThemeSwitch` is marked up as a radiogroup but has no arrow-key navigation and makes all three options tabbable.
+- [ ] 44. The `Public` route wrapper renders nothing while auth resolves, so /login and /signup flash blank where `Home` shows a spinner.
+- [ ] 45. When stored embeddings and the active embedder disagree on dimensions, knowledge search silently returns nothing.
+- [ ] 46. The invoice PDF footer is drawn once, so it is missing from every page but the last on a multi-page invoice.
+- [ ] 47. `list_invoices` passes the model's `status` straight through, and #105 now rejects anything outside the known set with a 400.
+- [ ] 48. The sign-in and sign-up forms have no `autoComplete` attributes, so password managers can't reliably fill or save credentials.
+- [ ] 49. `/api/health` returns ok regardless of database state, so a deploy health check passes while Mongo is unreachable.
+
