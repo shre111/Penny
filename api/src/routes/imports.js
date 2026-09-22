@@ -185,6 +185,7 @@ importsRouter.post('/invoices', upload.single('file'), async (req, res) => {
     const dueRaw = pick(rec, 'duedate', 'due', 'datedue')
     const issueRaw = pick(rec, 'issuedate', 'issue', 'date', 'issued')
     const statusRaw = pick(rec, 'status').toLowerCase()
+    const currencyRaw = pick(rec, 'currency', 'ccy').trim().toUpperCase()
     const notes = pick(rec, 'notes', 'note', 'description')
 
     if (!clientName) {
@@ -226,7 +227,7 @@ importsRouter.post('/invoices', upload.single('file'), async (req, res) => {
         clientId,
         number: await nextInvoiceNumber(req.userId),
         amount,
-        currency: 'USD',
+        currency: /^[A-Z]{3}$/.test(currencyRaw) ? currencyRaw : 'USD',
         issueDate: issueRaw && !Number.isNaN(Date.parse(issueRaw)) ? new Date(issueRaw) : new Date(),
         dueDate,
         status,
