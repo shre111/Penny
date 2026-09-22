@@ -15,8 +15,8 @@ const TEMPLATES: Record<Kind, { headers: string; sample: string }> = {
     sample: 'Acme Hardware,Jane Doe,jane@acme.com,555-0100,VIP client',
   },
   invoices: {
-    headers: 'client,amount,dueDate,issueDate,status,notes',
-    sample: 'Acme Hardware,4500,2026-07-01,2026-06-01,sent,Website redesign',
+    headers: 'client,amount,currency,dueDate,issueDate,status,notes',
+    sample: 'Acme Hardware,4500,USD,2026-07-01,2026-06-01,sent,Website redesign',
   },
 }
 
