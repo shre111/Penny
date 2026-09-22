@@ -35,13 +35,14 @@ exportsRouter.get('/clients.csv', async (req, res) => {
 exportsRouter.get('/invoices.csv', async (req, res) => {
   const invoices = await Invoice.find({ userId: req.userId }).sort({ dueDate: 1 }).populate('clientId', 'name')
   const csv = toCsv(
-    ['number', 'client', 'amount', 'amountPaid', 'balance', 'dueDate', 'issueDate', 'status', 'notes'],
+    ['number', 'client', 'amount', 'currency', 'amountPaid', 'balance', 'dueDate', 'issueDate', 'status', 'notes'],
     invoices.map((doc) => {
       const i = doc.toObject({ virtuals: true })
       return [
         i.number,
         i.clientId?.name || '',
         i.amount,
+        i.currency || 'USD',
         i.amountPaid,
         i.balance,
         day(i.dueDate),
