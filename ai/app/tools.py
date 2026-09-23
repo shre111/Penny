@@ -4,6 +4,7 @@ Tools return JSON strings; the streaming layer maps some tool results to rich
 UI artifacts (invoice tables, charts) by tool name.
 """
 import json
+from urllib.parse import quote
 from langchain_core.tools import tool
 
 from .node_client import request, NodeAPIError
@@ -96,7 +97,7 @@ def build_tools(user_id: str) -> list:
     def _find_invoice(invoice_number: str) -> dict:
         # Direct lookup by number — no list scan, no 200-row cap. Raises
         # NodeAPIError (404 from Node) if there's no match.
-        data = request(user_id, "GET", f"/api/invoices/by-number/{invoice_number.strip()}")
+        data = request(user_id, "GET", f"/api/invoices/by-number/{quote(invoice_number.strip(), safe='')}")
         return _compact_invoice(data["invoice"])
 
     @tool
