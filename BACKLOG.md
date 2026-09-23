@@ -69,7 +69,7 @@ Severity is lower this round: the earlier passes took the serious defects. These
 are round-trip fidelity, robustness and accessibility.
 
 - [x] 40. The CSV export added in #116 omits `currency`, and the importer hardcodes USD — a non-USD invoice loses its currency on a round trip.
-- [ ] 41. `_find_invoice` interpolates the invoice number into the URL path unencoded, so a number containing `/`, `?` or `#` hits the wrong route.
+- [x] 41. `_find_invoice` interpolates the invoice number into the URL path unencoded, so a number containing `/`, `?` or `#` hits the wrong route.
 - [ ] 42. A failed socket handshake (expired cookie) retries silently forever — the dashboard stops updating live with nothing said.
 - [ ] 43. `ThemeSwitch` is marked up as a radiogroup but has no arrow-key navigation and makes all three options tabbable.
 - [ ] 44. The `Public` route wrapper renders nothing while auth resolves, so /login and /signup flash blank where `Home` shows a spinner.
