@@ -6,6 +6,9 @@ let socket: Socket | null = null
 export function getSocket(): Socket {
   if (!socket) {
     socket = io({ withCredentials: true })
+    socket.on('connect_error', (err) => {
+      console.error('[socket] live updates unavailable:', err.message)
+    })
   }
   return socket
 }
