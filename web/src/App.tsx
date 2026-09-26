@@ -8,22 +8,24 @@ import Landing from './pages/Landing'
 import PublicInvoice from './pages/PublicInvoice'
 import { Spinner } from './components/ui'
 
+function FullPageSpinner() {
+  return (
+    <div className="min-h-screen flex items-center justify-center text-brand-700">
+      <Spinner className="h-7 w-7" />
+    </div>
+  )
+}
+
 // '/' is the product when signed in, the pitch when not
 function Home() {
   const { user, loading } = useAuth()
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-brand-700">
-        <Spinner className="h-7 w-7" />
-      </div>
-    )
-  }
+  if (loading) return <FullPageSpinner />
   return user ? <AppShell /> : <Landing />
 }
 
 function Public({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
-  if (loading) return null
+  if (loading) return <FullPageSpinner />
   if (user) return <Navigate to="/" replace />
   return <>{children}</>
 }
