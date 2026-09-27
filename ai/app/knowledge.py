@@ -103,6 +103,13 @@ def search(user_id: str, query: str, k: int = 3) -> list[dict]:
         return []
     qv = _get_embedder().embed_query(query)
     comparable = [c for c in chunks if len(c["embedding"]) == len(qv)]  # guard mixed embedders
+    if not comparable:
+        sources = sorted({c["source"] for c in chunks})
+        print(
+            f"[knowledge] {len(chunks)} stored chunk(s) were embedded with a different model "
+            f"({len(chunks[0]['embedding'])}-dim vs {len(qv)}-dim now) — re-teach to search them: {sources}"
+        )
+        return []
     scored = sorted(
         ({"source": c["source"], "chunk": c["chunk"], "score": _cosine(qv, c["embedding"])} for c in comparable),
         key=lambda x: -x["score"],
