@@ -74,7 +74,7 @@ are round-trip fidelity, robustness and accessibility.
 - [x] 43. `ThemeSwitch` is marked up as a radiogroup but has no arrow-key navigation and makes all three options tabbable.
 - [x] 44. The `Public` route wrapper renders nothing while auth resolves, so /login and /signup flash blank where `Home` shows a spinner.
 - [x] 45. When stored embeddings and the active embedder disagree on dimensions, knowledge search silently returns nothing.
-- [ ] 46. The invoice PDF footer is drawn once, so it is missing from every page but the last on a multi-page invoice.
+- [x] 46. The invoice PDF footer is drawn once, so it is missing from every page but the last on a multi-page invoice.
 - [ ] 47. `list_invoices` passes the model's `status` straight through, and #105 now rejects anything outside the known set with a 400.
 - [ ] 48. The sign-in and sign-up forms have no `autoComplete` attributes, so password managers can't reliably fill or save credentials.
 - [ ] 49. `/api/health` returns ok regardless of database state, so a deploy health check passes while Mongo is unreachable.
