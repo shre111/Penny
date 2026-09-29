@@ -28,17 +28,41 @@ def _compact_invoice(inv: dict) -> dict:
     }
 
 
+_STATUS_FILTERS = {"all", "overdue", "open", "draft", "sent", "paid", "void"}
+_STATUS_SYNONYMS = {
+    "": "all",
+    "any": "all",
+    "unpaid": "open",
+    "outstanding": "open",
+    "awaiting": "open",
+    "awaiting payment": "open",
+    "late": "overdue",
+    "past due": "overdue",
+    "settled": "paid",
+    "cancelled": "void",
+    "canceled": "void",
+    "drafts": "draft",
+}
+
+
+def _status_filter(status: str) -> str:
+    key = (status or "").strip().lower()
+    if key in _STATUS_FILTERS:
+        return key
+    return _STATUS_SYNONYMS.get(key, "all")
+
+
 def build_tools(user_id: str) -> list:
     @tool
     def list_invoices(status: str = "all", client_name: str = "") -> str:
         """Look up invoices. status: all | open (sent, unpaid) | overdue | paid | draft.
         Optionally filter by client_name. Returns invoice numbers, clients, amounts, balances, due dates."""
-        params = {"status": status, "limit": 50}
-        data = request(user_id, "GET", "/api/invoices", params=params)
+        applied = _status_filter(status)
+        data = request(user_id, "GET", "/api/invoices", params={"status": applied, "limit": 50})
         invoices = [_compact_invoice(i) for i in data["invoices"]]
         if client_name:
             invoices = [i for i in invoices if i["client"] and client_name.lower() in i["client"].lower()]
-        return json.dumps({"count": len(invoices), "invoices": invoices})
+        return json.dumps({"count": len(invoices), "filter": applied, "invoices": invoices})
 
     @tool
     def create_invoice(
