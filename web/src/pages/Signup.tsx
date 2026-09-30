@@ -59,11 +59,11 @@ export default function Signup() {
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className="label" htmlFor="name">Your name</label>
-            <input id="name" required className="input" value={form.name} onChange={set('name')} placeholder="Jordan Avery" />
+            <input id="name" required autoComplete="name" className="input" value={form.name} onChange={set('name')} placeholder="Jordan Avery" />
           </div>
           <div>
             <label className="label" htmlFor="businessName">Business name <span className="font-normal text-ink-soft">(optional)</span></label>
-            <input id="businessName" className="input" value={form.businessName} onChange={set('businessName')} placeholder="Bluepeak Studio" />
+            <input id="businessName" autoComplete="organization" className="input" value={form.businessName} onChange={set('businessName')} placeholder="Bluepeak Studio" />
           </div>
         </div>
         <div>
