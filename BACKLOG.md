@@ -77,5 +77,5 @@ are round-trip fidelity, robustness and accessibility.
 - [x] 46. The invoice PDF footer is drawn once, so it is missing from every page but the last on a multi-page invoice.
 - [x] 47. `list_invoices` passes the model's `status` straight through, and #105 now rejects anything outside the known set with a 400.
 - [x] 48. ~~The sign-in and sign-up forms have no `autoComplete` attributes~~ — **wrong, I didn't check**: email and password fields already carry the right values. Only the sign-up name and business-name fields lack one.
-- [ ] 49. `/api/health` returns ok regardless of database state, so a deploy health check passes while Mongo is unreachable.
+- [x] 49. `/api/health` returns ok regardless of database state, so a deploy health check passes while Mongo is unreachable.
 
