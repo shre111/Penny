@@ -1,4 +1,5 @@
 import express from 'express'
+import mongoose from 'mongoose'
 import http from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -40,7 +41,12 @@ app.use(express.json({ limit: '1mb' }))
 app.use(cookieParser())
 app.use(csrfGuard) // reject cross-site state-changing requests (defense-in-depth over SameSite=Lax)
 
-app.get('/api/health', (_req, res) => res.json({ ok: true, service: 'penny-api' }))
+app.get('/api/health', (_req, res) => {
+  const states = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' }
+  const db = states[mongoose.connection.readyState] || 'unknown'
+  const ok = mongoose.connection.readyState === 1
+  res.status(ok ? 200 : 503).json({ ok, service: 'penny-api', db })
+})
 app.use('/api/auth', authRouter)
 app.use('/api/clients', clientsRouter)
 app.use('/api/invoices', invoicesRouter)
